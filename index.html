@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Measure | Drafting Services</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #eceff1; padding: 20px; color: #263238; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 4px; border-top: 5px solid #37474f; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; font-weight: 300; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #cfd8dc; padding-bottom: 15px; }
+        label { display: block; margin-top: 20px; font-weight: 600; font-size: 0.85em; color: #546e7a; text-transform: uppercase; }
+        input, textarea, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #cfd8dc; border-radius: 4px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; }
+        input:focus { border-color: #37474f; outline: none; }
+        
+        .radio-group { margin-top: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #cfd8dc; }
+        .radio-option { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; font-size: 0.95em; }
+        .radio-option input { width: auto; margin-top: 0; margin-right: 12px; height: 18px; width: 18px; }
+
+        button { width: 100%; background: #37474f; color: white; border: none; padding: 16px; margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
+        button:hover { background: #263238; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Request a Measure</h2>
+    <form action="https://formspree.io/f/xykllwny" method="POST">
+        
+        <label>Customer Name</label>
+        <input type="text" name="name" placeholder="Full Name" required>
+
+        <label>Phone Number</label>
+        <input type="tel" name="phone" placeholder="(555) 555-5555" required>
+
+        <label>Address</label>
+        <input type="text" name="address" placeholder="Project Address" required>
+
+        <label>What are we measuring?</label>
+        <textarea name="details" rows="3" placeholder="e.g., Kitchen countertops, 1/4 inch floor plan check..."></textarea>
+
+        <label>Days you are available:</label>
+        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
+
+        <label>Preferred Time Window</label>
+        <select name="preferred_time">
+            <option value="Morning (8am-12pm)">Morning (8am - 12pm)</option>
+            <option value="Afternoon (12pm-4pm)">Afternoon (12pm - 4pm)</option>
+            <option value="Anytime">Anytime</option>
+        </select>
+
+        <div class="radio-group">
+            <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Text Cell" checked> 
+                This is a cell phone, please text to confirm.
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Phone Call"> 
+                I would prefer a phone call to confirm.
+            </label>
+        </div>
+
+        <button type="submit">Submit Request</button>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    flatpickr("#datePicker", {
+        mode: "multiple",
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        altInput: true,
+        altFormat: "F j, Y",
+        conjunction: ", "
+    });
+</script>
+
+</body>
+</html>
