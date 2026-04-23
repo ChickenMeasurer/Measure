@@ -8,7 +8,7 @@
     <style>
         body { 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            /* Your specific flooring photo */
+            /* Main Background: Your Dark Wood/Flooring Image */
             background: url('https://www.bandrflooringamerica.com/images/page1_img1.jpg') no-repeat center center fixed; 
             background-size: cover;
             padding: 20px; 
@@ -20,37 +20,57 @@
             min-height: 100vh;
         }
 
-        /* The 'Glass' Container */
         .container { 
             width: 100%;
             max-width: 500px; 
-            background: rgba(255, 255, 255, 0.92); /* Semi-transparent white */
+            /* Light Wood Texture for the Form Background */
+            background: url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png'), url('https://images.unsplash.com/photo-1546487817-5cb73461665e?auto=format&fit=crop&q=60&w=800');
+            background-blend-mode: overlay;
+            background-size: cover;
+            
             padding: 30px; 
-            border-radius: 12px; 
-            border-top: 6px solid #37474f; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-            backdrop-filter: blur(8px); /* Blurs the photo behind the form for a modern look */
+            border-radius: 8px; 
+            border: 1px solid #d7ccc8; /* Subtle wood-colored border */
+            border-top: 8px solid #3e2723; /* Darker accent top border */
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
         }
 
-        h2 { margin-top: 0; font-weight: 300; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #cfd8dc; padding-bottom: 15px; text-align: center; }
-        label { display: block; margin-top: 20px; font-weight: 600; font-size: 0.85em; color: #546e7a; text-transform: uppercase; }
+        h2 { 
+            margin-top: 0; 
+            font-weight: 300; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid #3e2723; 
+            padding-bottom: 15px; 
+            text-align: center; 
+            color: #3e2723; /* Dark brown text for header */
+        }
+
+        label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
         
         input, textarea, select { 
-            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #cfd8dc; 
-            border-radius: 6px; box-sizing: border-box; font-size: 16px; background: white;
+            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
+            border-radius: 4px; box-sizing: border-box; font-size: 16px; 
+            background: rgba(255, 255, 255, 0.85); /* Keeps input fields clean and bright */
         }
 
-        .radio-group { margin-top: 20px; background: rgba(248, 249, 250, 0.8); padding: 15px; border-radius: 6px; border: 1px solid #cfd8dc; }
-        .radio-option { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; font-size: 0.95em; }
-        .radio-option input { width: auto; margin-top: 0; margin-right: 12px; height: 18px; width: 18px; }
+        .radio-group { 
+            margin-top: 20px; 
+            background: rgba(255, 255, 255, 0.5); 
+            padding: 15px; 
+            border-radius: 4px; 
+            border: 1px solid #d7ccc8; 
+        }
+
+        .radio-option { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
+        .radio-option input { width: auto; margin-top: 0; margin-right: 12px; height: 18px; width: 18px; accent-color: #3e2723; }
 
         button { 
-            width: 100%; background: #37474f; color: white; border: none; padding: 18px; 
-            margin-top: 30px; border-radius: 6px; font-size: 16px; font-weight: bold; 
-            letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: transform 0.1s, background 0.3s;
+            width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
+            margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
+            letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
         }
-        button:hover { background: #263238; }
-        button:active { transform: scale(0.98); }
+        button:hover { background: #5d4037; }
     </style>
 </head>
 <body>
