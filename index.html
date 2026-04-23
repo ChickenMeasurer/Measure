@@ -42,12 +42,20 @@
         <label>Days you are available:</label>
         <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
 
-        <label>Preferred Time Window</label>
-        <select name="preferred_time">
-            <option value="Morning (8am-12pm)">Morning (8am - 12pm)</option>
-            <option value="Afternoon (12pm-4pm)">Afternoon (12pm - 4pm)</option>
-            <option value="Anytime">Anytime</option>
+        <label>Preferred Time</label>
+        <select name="preferred_time" required>
+            <option value="" disabled selected>Select a time...</option>
+            <option value="8:30 AM">8:30 AM</option>
+            <option value="9:00 AM">9:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="11:00 AM">11:00 AM</option>
+            <option value="12:00 PM">12:00 PM</option>
+            <option value="1:00 PM">1:00 PM</option>
+            <option value="2:00 PM">2:00 PM</option>
+            <option value="3:00 PM">3:00 PM</option>
         </select>
+
+
 
         <div class="radio-group">
             <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
