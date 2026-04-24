@@ -8,8 +8,8 @@
     <style>
         body { 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            /* Main Background: Your Dark Wood/Flooring Image */
-            background: url('https://www.bandrflooringamerica.com/images/page1_img1.jpg') no-repeat center center fixed; 
+            /* This uses your uploaded image as the main background */
+            background: url('backrgroundmain.png') no-repeat center center fixed; 
             background-size: cover;
             padding: 20px; 
             color: #263238;
@@ -23,35 +23,24 @@
         .container { 
             width: 100%;
             max-width: 500px; 
-            /* Light Wood Texture for the Form Background */
+            /* This keeps the light wood texture behind the text */
             background: url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png'), url('https://images.unsplash.com/photo-1546487817-5cb73461665e?auto=format&fit=crop&q=60&w=800');
             background-blend-mode: overlay;
             background-size: cover;
-            
             padding: 30px; 
             border-radius: 8px; 
-            border: 1px solid #d7ccc8; /* Subtle wood-colored border */
-            border-top: 8px solid #3e2723; /* Darker accent top border */
+            border: 1px solid #d7ccc8;
+            border-top: 8px solid #3e2723;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
         }
 
-        h2 { 
-            margin-top: 0; 
-            font-weight: 300; 
-            letter-spacing: 2px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid #3e2723; 
-            padding-bottom: 15px; 
-            text-align: center; 
-            color: #3e2723; /* Dark brown text for header */
-        }
-
+        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
         label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
         
         input, textarea, select { 
             width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
             border-radius: 4px; box-sizing: border-box; font-size: 16px; 
-            background: rgba(255, 255, 255, 0.85); /* Keeps input fields clean and bright */
+            background: rgba(255, 255, 255, 0.85); 
         }
 
         .radio-group { 
@@ -89,7 +78,7 @@
         <input type="text" name="address" placeholder="Project Address" required>
 
         <label>What are we measuring?</label>
-        <textarea name="details" rows="3" placeholder="e.g., Kitchen countertops, 1/4 inch floor plan check..."></textarea>
+        <textarea name="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
 
         <label>Days you are available:</label>
         <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
@@ -119,7 +108,7 @@
             </label>
         </div>
 
-        <button type="submit">Submit Request</button>
+        <button type="submit" id="submitBtn">Submit Request</button>
     </form>
 </div>
 
@@ -133,13 +122,9 @@
         altFormat: "F j, Y",
         conjunction: ", "
     });
-</script>
 
-<script>
     const form = document.querySelector('form');
     const container = document.querySelector('.container');
-
-    // Add your custom messages here!
     const messages = [
         "Got it! I'm sharpening my pencils and checking the schedule. I'll be in touch soon!",
         "Request received! Time to pull out the 1/4 inch scale. I'll reach out shortly.",
@@ -147,14 +132,12 @@
     ];
 
     form.onsubmit = async (e) => {
-        e.preventDefault(); // Stop the page from reloading
-        
+        e.preventDefault();
         const formData = new FormData(form);
-        const submitButton = form.querySelector('button');
-        submitButton.innerText = "Sending...";
-        submitButton.disabled = true;
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Sending...";
+        btn.disabled = true;
 
-        // Send data to Formspree in the background
         const response = await fetch(form.action, {
             method: 'POST',
             body: formData,
@@ -162,26 +145,22 @@
         });
 
         if (response.ok) {
-            // Pick a random message
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-            
-            // Swap the form for the Thank You message
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px 0;">
                     <h2 style="border:none;">Drawing Sent!</h2>
-                    <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMessage}</p>
+                    <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMsg}</p>
                     <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
                     <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.8em; margin-top: 20px; border:none; cursor:pointer;">Send another request</button>
                 </div>
             `;
         } else {
-            alert("Oops! There was a problem. Please try again.");
-            submitButton.innerText = "Submit Request";
-            submitButton.disabled = false;
+            alert("Oops! There was a problem.");
+            btn.innerText = "Submit Request";
+            btn.disabled = false;
         }
     };
 </script>
-    
-    
+
 </body>
 </html>
