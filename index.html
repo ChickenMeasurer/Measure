@@ -108,6 +108,8 @@
     // Supabase Configuration
     const SUPABASE_URL = 'https://juqakqqjwxgltiwaozli.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_70NXS_an6PzKv__sLT541g_ih0J3IQb';
+    
+    // Note the use of supabase.createClient here
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const form = document.getElementById('measureForm');
@@ -127,7 +129,7 @@
         const formData = new FormData(form);
         const selectedTimes = Array.from(formData.getAll('time')).join(', ');
 
-        // 1. Prepare Data for Supabase
+        // Prepare Data for Supabase
         const submissionData = {
             name: formData.get('name'),
             phone: formData.get('phone'),
@@ -139,19 +141,18 @@
         };
 
         try {
-            // 2. Fire off to Formspree (for the Email)
+            // 1. Send to Formspree
             const formspreePromise = fetch("https://formspree.io/f/xykllwny", {
                 method: 'POST',
                 body: formData,
                 headers: { 'Accept': 'application/json' }
             });
 
-            // 3. Fire off to Supabase (for the Database)
+            // 2. Send to Supabase Table 'Submissionss'
             const supabasePromise = _supabase
-                .from('submissions')
+                .from('Submissionss')
                 .insert([submissionData]);
 
-            // Wait for both to finish
             const [formspreeRes, supabaseRes] = await Promise.all([formspreePromise, supabasePromise]);
 
             if (formspreeRes.ok && !supabaseRes.error) {
@@ -165,11 +166,12 @@
                     </div>
                 `;
             } else {
-                throw new Error("One of the services failed to respond.");
+                const errorMsg = supabaseRes.error ? supabaseRes.error.message : "Notification Error";
+                throw new Error(errorMsg);
             }
         } catch (err) {
             console.error(err);
-            alert("Oops! There was a problem. Please check your internet or try again.");
+            alert("Submission Error: " + err.message);
             btn.innerText = "Submit Request";
             btn.disabled = false;
         }
