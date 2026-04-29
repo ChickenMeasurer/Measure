@@ -88,7 +88,7 @@
         <label>Days you are available:</label>
         <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
 
-        <label>Preferred Times (Select all that apply)</label>
+        <label>Preferred Times</label>
         <div class="radio-group time-grid">
             <label class="radio-option"><input type="checkbox" name="time" value="8:30 AM"> 8:30 AM</label>
             <label class="radio-option"><input type="checkbox" name="time" value="9:00 AM"> 9:00 AM</label>
@@ -118,11 +118,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script type="module">
-    // Firebase SDK Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Your Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
       authDomain: "chickenmeasurer-37304.firebaseapp.com",
@@ -133,11 +131,9 @@
       measurementId: "G-Q6YZZ205BG"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Initialize DatePicker
     flatpickr("#datePicker", {
         mode: "multiple",
         dateFormat: "Y-m-d",
@@ -161,7 +157,6 @@
         btn.innerText = "Sending...";
         btn.disabled = true;
 
-        // Collect Form Data
         const formDataObj = new FormData(form);
         const selectedTimes = [];
         form.querySelectorAll('input[name="time"]:checked').forEach(cb => selectedTimes.push(cb.value));
@@ -178,13 +173,18 @@
         };
 
         try {
-            // 1. Double Dip Part One: Firebase Store
-            await addDoc(collection(db, "submissions"), {
+            // Generate Readable ID: Name_Phone (e.g., John_Doe_5550199)
+            const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
+            const cleanPhone = submissionData.phone.replace(/\D/g, '');
+            const customID = `${cleanName}_${cleanPhone}`;
+
+            // 1. Firebase Store with Custom ID
+            await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
                 timestamp: serverTimestamp()
             });
 
-            // 2. Double Dip Part Two: Formspree Email
+            // 2. Formspree Email
             await fetch("https://formspree.io/f/xykllwny", {
                 method: 'POST',
                 body: JSON.stringify(submissionData),
@@ -194,7 +194,6 @@
                 }
             });
 
-            // Success UI
             const randomMsg = messages[Math.floor(Math.random() * messages.length)];
             container.innerHTML = `
                 <div style="text-align: center; padding: 40px 0;">
@@ -206,13 +205,12 @@
             `;
 
         } catch (error) {
-            console.error("Submission error:", error);
-            alert("Oops! There was a problem saving your request.");
+            console.error("Error:", error);
+            alert("Oops! There was a problem. Please try again.");
             btn.innerText = "Submit Request";
             btn.disabled = false;
         }
     };
 </script>
-
 </body>
 </html>
