@@ -3,179 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request a Measure | B&R Flooring</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <title>Floor Fighters | Project Submission</title>
     <style>
-        body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            background: url('backgroundmain.png') no-repeat center center fixed; 
-            background-size: cover;
-            padding: 20px; 
-            color: #263238;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .container { 
-            width: 100%;
-            max-width: 500px; 
-            background: url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png'), url('https://images.unsplash.com/photo-1546487817-5cb73461665e?auto=format&fit=crop&q=60&w=800');
-            background-blend-mode: overlay;
-            background-size: cover;
-            padding: 30px; 
-            border-radius: 8px; 
-            border: 1px solid #d7ccc8;
-            border-top: 8px solid #3e2723;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
-        }
-
-        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
-        label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
-        input, textarea, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; border-radius: 4px; box-sizing: border-box; font-size: 16px; background: rgba(255, 255, 255, 0.85); }
-        
-        .radio-group { margin-top: 20px; background: rgba(255, 255, 255, 0.5); padding: 15px; border-radius: 4px; border: 1px solid #d7ccc8; }
-        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .radio-option { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
-        .radio-option input { width: auto; margin-top: 0; margin-right: 10px; height: 18px; width: 18px; accent-color: #3e2723; }
-        
-        button { width: 100%; background: #3e2723; color: white; border: none; padding: 18px; margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s; }
-        button:hover { background: #5d4037; }
+        body { font-family: sans-serif; padding: 20px; background-color: #121212; color: white; }
+        form { display: flex; flex-direction: column; max-width: 400px; gap: 15px; }
+        input, textarea, button { padding: 12px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; font-size: 16px; }
+        button { background-color: #4CAF50; cursor: pointer; font-weight: bold; border: none; margin-top: 10px; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        .status { margin-top: 15px; font-weight: bold; }
+        h2 { color: #4CAF50; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Request a Measure</h2>
-    <form id="measureForm">
-        <label>Customer Name</label>
-        <input type="text" name="name" placeholder="Full Name" required>
-
-        <label>Phone Number</label>
-        <input type="tel" name="phone" placeholder="(555) 555-5555" required>
-
-        <label>Address</label>
-        <input type="text" name="address" placeholder="Project Address" required>
-
-        <label>What are we measuring?</label>
-        <textarea name="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
-
-        <label>Days you are available:</label>
-        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
-
-        <label>Preferred Times (Select all that apply)</label>
-        <div class="radio-group time-grid">
-            <label class="radio-option"><input type="checkbox" name="time" value="8:30 AM"> 8:30 AM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="9:00 AM"> 9:00 AM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="10:00 AM"> 10:00 AM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="11:00 AM"> 11:00 AM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="12:00 PM"> 12:00 PM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="1:00 PM"> 1:00 PM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="2:00 PM"> 2:00 PM</label>
-            <label class="radio-option"><input type="checkbox" name="time" value="3:00 PM"> 3:00 PM</label>
-        </div>
-
-        <div class="radio-group">
-            <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
-            <label class="radio-option">
-                <input type="radio" name="confirmation" value="Text Cell" checked> This is a cell phone, please text.
-            </label>
-            <label class="radio-option">
-                <input type="radio" name="confirmation" value="Phone Call"> I would prefer a phone call.
-            </label>
-        </div>
-
-        <button type="submit" id="submitBtn">Submit Request</button>
-    </form>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script>
-    flatpickr("#datePicker", {
-        mode: "multiple",
-        dateFormat: "Y-m-d",
-        minDate: "today",
-        altInput: true,
-        altFormat: "F j, Y",
-        conjunction: ", "
-    });
-
-    // Supabase Configuration
-    const SUPABASE_URL = 'https://juqakqqjwxgltiwaozli.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_70NXS_an6PzKv__sLT541g_ih0J3IQb';
+    <h2>Project Submission</h2>
+    <p>Database: Firebase | Alerts: Formspree</p>
     
-    // Note the use of supabase.createClient here
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <form id="submissionForm">
+        <input type="text" id="name" placeholder="Customer Name" required>
+        <input type="tel" id="phone" placeholder="Phone Number" required>
+        <input type="text" id="address" placeholder="Property Address" required>
+        <textarea id="details" placeholder="Measurements & Project Details" rows="5"></textarea>
+        <button type="submit" id="submitBtn">Submit Project</button>
+    </form>
 
-    const form = document.getElementById('measureForm');
-    const container = document.querySelector('.container');
-    const messages = [
-        "Got it! I'm sharpening my pencils and checking the schedule. I'll be in touch soon!",
-        "Request received! Time to pull out the 1/4 inch scale. I'll reach out shortly.",
-        "Success! I've added your details to my clipboard. Expect a confirmation soon!"
-    ];
+    <div id="status" class="status"></div>
 
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "Sending...";
-        btn.disabled = true;
+    <script type="module">
+        // Import Firebase SDKs from CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const formData = new FormData(form);
-        const selectedTimes = Array.from(formData.getAll('time')).join(', ');
-
-        // Prepare Data for Supabase
-        const submissionData = {
-            name: formData.get('name'),
-            phone: formData.get('phone'),
-            address: formData.get('address'),
-            details: formData.get('details'),
-            available_days: formData.get('available_days'),
-            preferred_times: selectedTimes,
-            confirmation: formData.get('confirmation')
+        // Your Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
+            authDomain: "chickenmeasurer-37304.firebaseapp.com",
+            projectId: "chickenmeasurer-37304",
+            storageBucket: "chickenmeasurer-37304.firebasestorage.app",
+            messagingSenderId: "871581751225",
+            appId: "1:871581751225:web:bec4978ba235c1c4418868",
+            measurementId: "G-Q6YZZ205BG"
         };
 
-        try {
-            // 1. Send to Formspree
-            const formspreePromise = fetch("https://formspree.io/f/xykllwny", {
-                method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' }
-            });
+        // Initialize Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-            // 2. Send to Supabase Table 'Submissionss'
-            const supabasePromise = _supabase
-                .from('Submissionss')
-                .insert([submissionData]);
+        const form = document.getElementById('submissionForm');
+        const statusDiv = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
 
-            const [formspreeRes, supabaseRes] = await Promise.all([formspreePromise, supabasePromise]);
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Disable button to prevent double-clicks while driving/on mobile
+            submitBtn.disabled = true;
+            statusDiv.style.color = "#FFD700";
+            statusDiv.textContent = "Syncing with Database & Email...";
 
-            if (formspreeRes.ok && !supabaseRes.error) {
-                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px 0;">
-                        <h2 style="border:none;">Drawing Sent!</h2>
-                        <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMsg}</p>
-                        <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
-                        <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.8em; margin-top: 20px; border:none; cursor:pointer;">Send another request</button>
-                    </div>
-                `;
-            } else {
-                const errorMsg = supabaseRes.error ? supabaseRes.error.message : "Notification Error";
-                throw new Error(errorMsg);
+            const formData = {
+                customer_name: document.getElementById('name').value,
+                phone_number: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                project_details: document.getElementById('details').value,
+                submitted_at: new Date().toLocaleString(),
+                source: "FloorFighters_Mobile_Field"
+            };
+
+            try {
+                // 1. Double Dip Part One: Save to Firebase Firestore
+                const docRef = await addDoc(collection(db, "submissions"), {
+                    ...formData,
+                    timestamp: serverTimestamp() // Official DB timestamp
+                });
+                console.log("Firestore Saved ID:", docRef.id);
+
+                // 2. Double Dip Part Two: Trigger Formspree Email
+                await fetch("https://formspree.io/f/xykllwny", {
+                    method: "POST",
+                    body: JSON.stringify(formData),
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                });
+
+                // Success Message
+                statusDiv.style.color = "#4CAF50";
+                statusDiv.textContent = "Success! Database updated and email sent.";
+                form.reset();
+
+            } catch (error) {
+                console.error("Critical Error:", error);
+                statusDiv.style.color = "#ff5252";
+                statusDiv.textContent = "Error: " + error.message;
+            } finally {
+                submitBtn.disabled = false;
             }
-        } catch (err) {
-            console.error(err);
-            alert("Submission Error: " + err.message);
-            btn.innerText = "Submit Request";
-            btn.disabled = false;
-        }
-    };
-</script>
+        });
+    </script>
 </body>
 </html>
