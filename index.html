@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request a Measure | Drafting Services</title>
+    <title>Request a Measure | B&R Flooring</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         body { 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
@@ -34,37 +37,14 @@
 
         h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
         label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
+        input, textarea, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; border-radius: 4px; box-sizing: border-box; font-size: 16px; background: rgba(255, 255, 255, 0.85); }
         
-        input, textarea, select { 
-            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
-            border-radius: 4px; box-sizing: border-box; font-size: 16px; 
-            background: rgba(255, 255, 255, 0.85); 
-        }
-
-        .radio-group { 
-            margin-top: 20px; 
-            background: rgba(255, 255, 255, 0.5); 
-            padding: 15px; 
-            border-radius: 4px; 
-            border: 1px solid #d7ccc8; 
-        }
-
-        /* Grid for Multiple Time Selection */
-        .time-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
+        .radio-group { margin-top: 20px; background: rgba(255, 255, 255, 0.5); padding: 15px; border-radius: 4px; border: 1px solid #d7ccc8; }
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .radio-option { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
         .radio-option input { width: auto; margin-top: 0; margin-right: 10px; height: 18px; width: 18px; accent-color: #3e2723; }
-
-        button { 
-            width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
-            margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
-            letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
-        }
+        
+        button { width: 100%; background: #3e2723; color: white; border: none; padding: 18px; margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s; }
         button:hover { background: #5d4037; }
     </style>
 </head>
@@ -72,8 +52,7 @@
 
 <div class="container">
     <h2>Request a Measure</h2>
-    <form action="https://formspree.io/f/xykllwny" method="POST">
-        
+    <form id="measureForm">
         <label>Customer Name</label>
         <input type="text" name="name" placeholder="Full Name" required>
 
@@ -104,12 +83,10 @@
         <div class="radio-group">
             <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
             <label class="radio-option">
-                <input type="radio" name="confirmation" value="Text Cell" checked> 
-                This is a cell phone, please text to confirm.
+                <input type="radio" name="confirmation" value="Text Cell" checked> This is a cell phone, please text.
             </label>
             <label class="radio-option">
-                <input type="radio" name="confirmation" value="Phone Call"> 
-                I would prefer a phone call to confirm.
+                <input type="radio" name="confirmation" value="Phone Call"> I would prefer a phone call.
             </label>
         </div>
 
@@ -128,7 +105,12 @@
         conjunction: ", "
     });
 
-    const form = document.querySelector('form');
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://juqakqqjwxgltiwaozli.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_70NXS_an6PzKv__sLT541g_ih0J3IQb';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const form = document.getElementById('measureForm');
     const container = document.querySelector('.container');
     const messages = [
         "Got it! I'm sharpening my pencils and checking the schedule. I'll be in touch soon!",
@@ -138,34 +120,60 @@
 
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(form);
         const btn = document.getElementById('submitBtn');
         btn.innerText = "Sending...";
         btn.disabled = true;
 
-        const response = await fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: { 'Accept': 'application/json' }
-        });
+        const formData = new FormData(form);
+        const selectedTimes = Array.from(formData.getAll('time')).join(', ');
 
-        if (response.ok) {
-            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px 0;">
-                    <h2 style="border:none;">Drawing Sent!</h2>
-                    <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMsg}</p>
-                    <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
-                    <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.8em; margin-top: 20px; border:none; cursor:pointer;">Send another request</button>
-                </div>
-            `;
-        } else {
-            alert("Oops! There was a problem.");
+        // 1. Prepare Data for Supabase
+        const submissionData = {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            address: formData.get('address'),
+            details: formData.get('details'),
+            available_days: formData.get('available_days'),
+            preferred_times: selectedTimes,
+            confirmation: formData.get('confirmation')
+        };
+
+        try {
+            // 2. Fire off to Formspree (for the Email)
+            const formspreePromise = fetch("https://formspree.io/f/xykllwny", {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json' }
+            });
+
+            // 3. Fire off to Supabase (for the Database)
+            const supabasePromise = _supabase
+                .from('submissions')
+                .insert([submissionData]);
+
+            // Wait for both to finish
+            const [formspreeRes, supabaseRes] = await Promise.all([formspreePromise, supabasePromise]);
+
+            if (formspreeRes.ok && !supabaseRes.error) {
+                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 0;">
+                        <h2 style="border:none;">Drawing Sent!</h2>
+                        <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMsg}</p>
+                        <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
+                        <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.8em; margin-top: 20px; border:none; cursor:pointer;">Send another request</button>
+                    </div>
+                `;
+            } else {
+                throw new Error("One of the services failed to respond.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Oops! There was a problem. Please check your internet or try again.");
             btn.innerText = "Submit Request";
             btn.disabled = false;
         }
     };
 </script>
-
 </body>
 </html>
