@@ -80,16 +80,17 @@
                     const lat = data.location.lat;
                     const lon = data.location.lon;
 
-                    // Place individual pins
-                    const marker = L.marker([lat, lon]).addTo(map);
-                    marker.bindPopup(`
-                        <div style="font-family: sans-serif;">
-                            <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
-                            <span style="font-size: 0.9em;">${data.address}</span><br>
-                            <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
-                            <small>${data.details || 'No project notes.'}</small>
-                        </div>
-                    `);
+
+// Place individual pins
+const marker = L.marker([lat, lon]).addTo(map);
+marker.bindPopup(`
+    <div style="font-family: sans-serif;">
+        <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
+        <small>${data.details || 'No project notes.'}</small>
+    </div>
+`);
+
 
                     // Add to our "Blanket" coordinate list (Turf uses [lon, lat])
                     points.push(turf.point([lon, lat]));
