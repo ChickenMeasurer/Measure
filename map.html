@@ -8,7 +8,12 @@
     
     <style>
         body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        #map { height: 100vh; width: 100vw; }
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
+            /* Fallback Blueprint Color if server tiles are blocked */
+            background-color: #0b2246; 
+        }
         
         .map-label {
             position: absolute;
@@ -27,7 +32,6 @@
             pointer-events: none;
         }
 
-        /* Styling the popup to match your drafting theme */
         .leaflet-popup-content-wrapper {
             background: #fdfaf7;
             color: #3e2723;
@@ -37,7 +41,7 @@
 </head>
 <body>
 
-    <div class="map-label">📐 Measurement Coverage Blanket</div>
+    <div class="map-label">📐 Measurement Coverage</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -53,72 +57,88 @@
             projectId: "chickenmeasurer-37304",
             storageBucket: "chickenmeasurer-37304.firebasestorage.app",
             messagingSenderId: "871581751225",
-            appId: "1:871581751225:web:bec4978ba235c1c4418868",
-            measurementId: "G-Q6YZZ205BG"
+            appId: "1:871581751225:web:bec4978ba235c1c4418868"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. Initialize Map
-        const map = L.map('map').setView([47.0379, -122.9007], 10); // Centered near Olympia
+        const map = L.map('map').setView([47.0379, -122.9007], 10);
 
-        // 2. Add Tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+        // Primary Layer: OpenStreetMap Tiles
+        const standardTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
 
-        async function loadCoverage() {
-            const querySnapshot = await getDocs(collection(db, "submissions"));
-            const points = []; 
-            const bounds = [];
-
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                
-                if (data.location && data.location.lat && data.location.lon) {
-                    const lat = data.location.lat;
-                    const lon = data.location.lon;
-
-
-// Place individual pins
-const marker = L.marker([lat, lon]).addTo(map);
-marker.bindPopup(`
-    <div style="font-family: sans-serif;">
-        <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
-        <small>${data.details || 'No project notes.'}</small>
-    </div>
-`);
-
-
-                    // Add to our "Blanket" coordinate list (Turf uses [lon, lat])
-                    points.push(turf.point([lon, lat]));
-                    bounds.push([lat, lon]);
-                }
-            });
-
-            // 3. Draw the "Blanket" (Convex Hull)
-            if (points.length >= 3) {
-                const featureCollection = turf.featureCollection(points);
-                const hull = turf.convex(featureCollection);
-
-                if (hull) {
-                    L.geoJSON(hull, {
-                        style: {
-                            color: '#3e2723',       // Border color
-                            weight: 3,
-                            opacity: 0.6,
-                            fillColor: '#8b4513',  // Blanket fill color
-                            fillOpacity: 0.25      // Transparency
-                        }
-                    }).addTo(map);
-                }
+        // Fallback Layer: Local Blueprint Blueprint Image (hosted in your repo)
+        const blueprintFallback = L.imageOverlay(
+            'blueprint.jpg', // Ensure this file is uploaded in the same Measure directory
+            [[46.8, -123.3], [47.3, -122.5]], // Coordinates covering the Olympia/Lacey area
+            {
+                opacity: 0.8,
+                interactive: false
             }
+        );
 
-            // Auto-zoom to fit the blanket
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [80, 80] });
+        // Listen for tile loading errors (fired when the network is blocked)
+        standardTiles.on('tileerror', function() {
+            console.warn("Firewall or network connection blocked: switching to blueprint fallback.");
+            
+            // Remove the broken tiles and add the local blueprint overlay instead
+            map.removeLayer(standardTiles);
+            blueprintFallback.addTo(map);
+        });
+
+        async function loadCoverage() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "submissions"));
+                const points = []; 
+                const bounds = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    if (data.location && data.location.lat && data.location.lon) {
+                        const lat = data.location.lat;
+                        const lon = data.location.lon;
+
+                        const marker = L.marker([lat, lon]).addTo(map);
+                        marker.bindPopup(`
+                            <div style="font-family: sans-serif;">
+                                <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
+                                <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
+                                <small>${data.details || 'No project notes.'}</small>
+                            </div>
+                        `);
+
+                        points.push(turf.point([lon, lat]));
+                        bounds.push([lat, lon]);
+                    }
+                });
+
+                if (points.length >= 3) {
+                    const featureCollection = turf.featureCollection(points);
+                    const hull = turf.convex(featureCollection);
+
+                    if (hull) {
+                        L.geoJSON(hull, {
+                            style: {
+                                color: '#d39e3a',       // Blueprint-styled orange/yellow line
+                                weight: 3,
+                                opacity: 0.6,
+                                fillColor: '#0b2246',  // Deep blueprint fill
+                                fillOpacity: 0.15      // Transparent blanket
+                            }
+                        }).addTo(map);
+                    }
+                }
+
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [80, 80] });
+                }
+            } catch (err) {
+                console.error("Data could not be retrieved:", err);
             }
         }
 
