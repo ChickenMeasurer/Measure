@@ -22,7 +22,7 @@
         .container { 
             width: 100%;
             max-width: 500px; 
-            /* Updated to use your new textbackground.jpg with a slight paper overlay */
+            /* Uses your custom textbackground image with the paper texture pattern */
             background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
@@ -178,6 +178,7 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
+            // --- Geolocation ---
             let coords = { lat: null, lon: null };
             try {
                 const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(submissionData.address)}&limit=1`);
@@ -190,17 +191,19 @@
                 console.error("Geocoding failed, but continuing with submission...", geoErr);
             }
 
+            // 1. Firebase Store
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
                 location: coords,
                 timestamp: serverTimestamp()
             });
 
-            await fetch("https://formspree.io/f/xykllwny", {
+            // 2. Google Apps Script Email Trigger
+            await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
                 method: 'POST',
+                mode: 'no-cors',
                 body: JSON.stringify(submissionData),
                 headers: { 
-                    'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 }
             });
