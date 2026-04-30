@@ -22,7 +22,8 @@
         .container { 
             width: 100%;
             max-width: 500px; 
-            background: url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png'), url('https://images.unsplash.com/photo-1546487817-5cb73461665e?auto=format&fit=crop&q=60&w=800');
+            /* Updated to use your new textbackground.jpg with a slight paper overlay */
+            background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
             padding: 30px; 
@@ -173,12 +174,10 @@
         };
 
         try {
-            // Generate Readable ID
             const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
-            // --- GEOLOCATION LOGIC ---
             let coords = { lat: null, lon: null };
             try {
                 const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(submissionData.address)}&limit=1`);
@@ -191,18 +190,15 @@
                 console.error("Geocoding failed, but continuing with submission...", geoErr);
             }
 
-            // 1. Firebase Store (Custom ID + Coordinates)
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
                 location: coords,
                 timestamp: serverTimestamp()
             });
 
-            // 2. Formspree Email (Including map link if found)
-            const mapLink = coords.lat ? `https://www.google.com/maps?q=${coords.lat},${coords.lon}` : 'N/A';
             await fetch("https://formspree.io/f/xykllwny", {
                 method: 'POST',
-                body: JSON.stringify({ ...submissionData, google_maps_link: mapLink }),
+                body: JSON.stringify(submissionData),
                 headers: { 
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
