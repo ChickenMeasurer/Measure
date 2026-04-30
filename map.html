@@ -7,28 +7,41 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         #map { height: 100vh; width: 100vw; }
         
         .map-label {
             position: absolute;
-            top: 10px;
+            top: 20px;
             left: 50px;
             z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-left: 5px solid #3e2723;
             font-weight: bold;
+            color: #3e2723;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* Styling the popup to match your drafting theme */
+        .leaflet-popup-content-wrapper {
+            background: #fdfaf7;
+            color: #3e2723;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div class="map-label">📐 Measurement Coverage</div>
+    <div class="map-label">📐 Measurement Coverage Blanket</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -40,51 +53,75 @@
             projectId: "chickenmeasurer-37304",
             storageBucket: "chickenmeasurer-37304.firebasestorage.app",
             messagingSenderId: "871581751225",
-            appId: "1:871581751225:web:bec4978ba235c1c4418868"
+            appId: "1:871581751225:web:bec4978ba235c1c4418868",
+            measurementId: "G-Q6YZZ205BG"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. Initialize the Map (Centered on a general starting point)
-        const map = L.map('map').setView([39.8283, -98.5795], 4); 
+        // 1. Initialize Map
+        const map = L.map('map').setView([47.0379, -122.9007], 10); // Centered near Olympia
 
-        // 2. Add the Map "Tiles" (The visual style)
+        // 2. Add Tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // 3. Fetch data from Firebase
-        async function loadMarkers() {
+        async function loadCoverage() {
             const querySnapshot = await getDocs(collection(db, "submissions"));
+            const points = []; 
             const bounds = [];
 
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 
-                // Only place a marker if we have valid coordinates
                 if (data.location && data.location.lat && data.location.lon) {
-                    const marker = L.marker([data.location.lat, data.location.lon]).addTo(map);
-                    
-                    // Create a popup with customer details
+                    const lat = data.location.lat;
+                    const lon = data.location.lon;
+
+                    // Place individual pins
+                    const marker = L.marker([lat, lon]).addTo(map);
                     marker.bindPopup(`
-                        <strong>${data.name}</strong><br>
-                        ${data.address}<br>
-                        <small>${data.details || 'No notes'}</small>
+                        <div style="font-family: sans-serif;">
+                            <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
+                            <span style="font-size: 0.9em;">${data.address}</span><br>
+                            <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
+                            <small>${data.details || 'No project notes.'}</small>
+                        </div>
                     `);
 
-                    bounds.push([data.location.lat, data.location.lon]);
+                    // Add to our "Blanket" coordinate list (Turf uses [lon, lat])
+                    points.push(turf.point([lon, lat]));
+                    bounds.push([lat, lon]);
                 }
             });
 
-            // Auto-zoom the map to fit all your pins
+            // 3. Draw the "Blanket" (Convex Hull)
+            if (points.length >= 3) {
+                const featureCollection = turf.featureCollection(points);
+                const hull = turf.convex(featureCollection);
+
+                if (hull) {
+                    L.geoJSON(hull, {
+                        style: {
+                            color: '#3e2723',       // Border color
+                            weight: 3,
+                            opacity: 0.6,
+                            fillColor: '#8b4513',  // Blanket fill color
+                            fillOpacity: 0.25      // Transparency
+                        }
+                    }).addTo(map);
+                }
+            }
+
+            // Auto-zoom to fit the blanket
             if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [50, 50] });
+                map.fitBounds(bounds, { padding: [80, 80] });
             }
         }
 
-        loadMarkers();
+        loadCoverage();
     </script>
 </body>
 </html>
-
