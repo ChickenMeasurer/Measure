@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Portal | Chicken Measurer</title>
+    <title>Sales Entry | Chicken Measurer</title>
     <style>
         body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #fdfaf7; 
             color: #3e2723;
             padding: 20px; 
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80vh;
+            min-height: 90vh;
+            margin: 0;
         }
         .container { 
             width: 100%;
@@ -33,33 +34,51 @@
             padding-bottom: 15px; 
             text-align: center; 
             color: #3e2723; 
-            font-size: 1.5em;
+            font-size: 1.4em;
+            margin-top: 0;
         }
-        p { text-align: center; color: #4e342e; font-size: 0.9em; }
+        label { display: block; margin-top: 15px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
+        input, textarea { 
+            width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #bcaaa4; 
+            border-radius: 4px; box-sizing: border-box; font-size: 15px; 
+            background: rgba(255, 255, 255, 0.85); 
+        }
+        .room-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .checkbox-option input { width: auto; margin-right: 8px; accent-color: #3e2723; }
         .upload-btn { 
             width: 100%; 
             background: #3e2723; 
             color: white; 
             border: none; 
             padding: 18px; 
-            margin-top: 20px; 
+            margin-top: 25px; 
             border-radius: 4px; 
-            font-size: 16px; 
+            font-size: 15px; 
             font-weight: bold; 
             letter-spacing: 1.5px; 
             cursor: pointer; 
             text-transform: uppercase; 
             transition: background 0.3s;
         }
-        .upload-btn:hover { background: #5d4037; }
+        .upload-btn:active { background: #5d4037; }
         #status { 
-            margin-top: 25px; 
-            padding: 15px; 
+            margin-top: 20px; 
+            padding: 12px; 
             border-radius: 4px; 
             background: #faf8f5; 
             border: 1px solid #bcaaa4; 
-            font-size: 0.9em; 
-            line-height: 1.5;
+            font-size: 0.8em; 
             color: #4e342e;
         }
     </style>
@@ -67,17 +86,34 @@
 <body>
 
 <div class="container">
-    <h1>📤 Sales Uploader</h1>
-    <p>Upload or take a picture of the printed measure request form.</p>
+    <h1>📤 Sales Form Entry</h1>
     
-    <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
-    
-    <button class="upload-btn" onclick="document.getElementById('imageInput').click()">📸 Snap & Upload</button>
-    
-    <div id="status">Status: Waiting for action...</div>
-</div>
+    <label>Customer Name</label>
+    <input type="text" id="custName" placeholder="Client Name">
 
-<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <label>Project Address</label>
+    <input type="text" id="custAddress" placeholder="Address">
+
+    <label>Phone Number</label>
+    <input type="tel" id="custPhone" placeholder="555-555-5555">
+
+    <label>Rooms to Measure</label>
+    <div class="room-grid">
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Whole House"> Whole House</label>
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Kitchen"> Kitchen</label>
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Bathrooms"> Bathrooms</label>
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Living Area"> Living Area</label>
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Bedrooms"> Bedrooms</label>
+        <label class="checkbox-option"><input type="checkbox" name="room" value="Other"> Other</label>
+    </div>
+
+    <label>Additional Notes</label>
+    <textarea id="custDetails" rows="2" placeholder="e.g., 1800 SF or specific notes..."></textarea>
+
+    <button class="upload-btn" id="submitBtn" onclick="submitMeasure()">Submit Information</button>
+    
+    <div id="status">Status: Ready for input</div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -89,85 +125,81 @@
       projectId: "chickenmeasurer-37304",
       storageBucket: "chickenmeasurer-37304.firebasestorage.app",
       messagingSenderId: "871581751225",
-      appId: "1:871581751225:web:bec4978ba235c1c4418868",
-      measurementId: "G-Q6YZZ205BG"
+      appId: "1:871581751225:web:bec4978ba235c1c4418868"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const input = document.getElementById('imageInput');
-    const status = document.getElementById('status');
+    // Make the function available globally so the onclick button works
+    window.submitMeasure = async function() {
+        const name = document.getElementById('custName').value;
+        const address = document.getElementById('custAddress').value;
+        const phone = document.getElementById('custPhone').value;
+        const details = document.getElementById('custDetails').value;
+        
+        // Grab checked rooms
+        const rooms = [];
+        document.querySelectorAll('input[name="room"]:checked').forEach((cb) => {
+            rooms.push(cb.value);
+        });
 
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        if(!name || !address) {
+            alert("Please fill in at least the name and address.");
+            return;
+        }
 
-        status.innerHTML = "🌀 <strong>Reading image data...</strong><br>Please wait while the AI scans the text.";
+        document.getElementById('submitBtn').innerText = "Submitting...";
 
+        const submissionData = {
+            name: name,
+            address: address,
+            phone: phone || "555-555-5555",
+            details: rooms.length > 0 ? rooms.join(", ") : details,
+            available_days: "ASAP",
+            confirmation: "Text Cell",
+            submitted_at: new Date().toLocaleString()
+        };
+
+        // Geocode coordinates and submit to Firebase and Email
         try {
-            // Read image text via local OCR
-            const { data: { text } } = await Tesseract.recognize(file, 'eng');
-            console.log("Extracted Raw Text:", text);
-
-            // Attempt to pull the fields dynamically
-            const extractedData = {
-                name: text.match(/Name:\s*(.*)/i)?.[1]?.trim() || "Generated Client",
-                phone: text.match(/Phone:\s*(.*)/i)?.[1]?.trim() || "555-555-5555",
-                address: text.match(/Address:\s*(.*)/i)?.[1]?.trim() || "123 Default Street",
-                details: text.match(/Details:\s*(.*)/i)?.[1]?.trim() || "Form details uploaded via Sales Portal.",
-                available_days: "Flexible",
-                confirmation: "Text Cell",
-                submitted_at: new Date().toLocaleString()
-            };
-
-            status.innerHTML = `✅ <strong>Scanned successfully!</strong><br>` +
-                               `Name: ${extractedData.name}<br>` +
-                               `Address: ${extractedData.address}<br>` +
-                               `<i>Uploading to database...</i>`;
-
-            // Geocode the address
             let coords = { lat: null, lon: null };
-            try {
-                const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(extractedData.address)}&limit=1`);
-                const geoData = await geoResponse.json();
-                if (geoData && geoData.length > 0) {
-                    coords.lat = parseFloat(geoData[0].lat);
-                    coords.lon = parseFloat(geoData[0].lon);
-                }
-            } catch (err) {
-                console.warn("Geocoding failed, but continuing submission.");
+            const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(submissionData.address)}&limit=1`);
+            const geoData = await geoResponse.json();
+            if (geoData && geoData.length > 0) {
+                coords.lat = parseFloat(geoData[0].lat);
+                coords.lon = parseFloat(geoData[0].lon);
             }
 
-            // Save to Firebase
-            const cleanName = extractedData.name.trim().replace(/\s+/g, '_');
-            const cleanPhone = extractedData.phone.replace(/\D/g, '');
+            const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
+            const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
             await setDoc(doc(db, "submissions", customID), {
-                ...extractedData,
+                ...submissionData,
                 location: coords,
                 timestamp: serverTimestamp()
             });
 
-            // Send Email Notification
+            // Trigger Google Script
             await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify(extractedData),
+                body: JSON.stringify(submissionData),
                 headers: { 
                     'Content-Type': 'application/json'
                 }
             });
 
-            status.innerHTML = "🎉 <strong>Success!</strong> The measure sheet has been successfully processed and added to the map.";
-            
-        } catch (error) {
-            console.error("Processing Error:", error);
-            status.innerHTML = "❌ <strong>Error processing image.</strong> Please make sure the form text is clear and retry.";
-        }
-    };
-</script>
+            document.getElementById('status').innerHTML = "✅ Submitted! Adding to coverage map.";
+            setTimeout(() => location.reload(), 2000);
 
+        } catch (err) {
+            console.error(err);
+            alert("Submission error, please try again.");
+            document.getElementById('submitBtn').innerText = "Submit Information";
+        }
+    }
+</script>
 </body>
 </html>
