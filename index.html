@@ -178,22 +178,31 @@
             const customID = `${cleanName}_${cleanPhone}`;
 
             // --- Geolocation ---
-            let coords = { lat: 47.0392, lon: -122.8105 }; // Default to Lacey, WA
+            let coords = null; // Removed fallback to ensure we don't accidentally drop a pin at the default location
             try {
-                const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(submissionData.address)}&limit=1`);
+                const fullAddress = `${submissionData.address}, WA`;
+                const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
+                const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
+                
+                const geoResponse = await fetch(geoUrl);
                 const geoData = await geoResponse.json();
+                
                 if (geoData && geoData.length > 0) {
-                    coords.lat = parseFloat(geoData[0].lat);
-                    coords.lon = parseFloat(geoData[0].lon);
+                    coords = {
+                        lat: parseFloat(geoData[0].lat),
+                        lon: parseFloat(geoData[0].lon)
+                    };
+                } else {
+                    console.warn("Address not found within bounds. Coordinates will be null.");
                 }
             } catch (geoErr) {
-                console.error("Geocoding failed, using default coordinates...", geoErr);
+                console.error("Geocoding failed, coordinates will be null.", geoErr);
             }
 
             // 1. Firebase Store
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
-                location: coords,
+                location: coords, // May be null if geocoding didn't resolve
                 timestamp: serverTimestamp()
             });
 
