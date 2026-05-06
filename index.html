@@ -185,7 +185,6 @@
         "Success! I've added your details to my clipboard. Expect a confirmation soon!"
     ];
 
-    // Expose testAddress function globally to be used in onclick=""
     window.testAddress = async function() {
         const addressVal = document.getElementById('address').value;
         const btn = document.getElementById('checkBtn');
@@ -206,10 +205,10 @@
             if (data && data.length > 0) {
                 alert(`Found: ${data[0].display_name}`);
                 btn.innerText = "Test";
-                btn.style.background = "#2e7d32"; // Success: turns green
+                btn.style.background = "#2e7d32";
             } else {
                 alert("Address not found within Washington bounds. Please check the spelling.");
-                btn.style.background = "#c62828"; // Warning: turns red
+                btn.style.background = "#c62828";
                 btn.innerText = "Test";
             }
         } catch (err) {
@@ -244,7 +243,6 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
-            // --- Geolocation ---
             let coords = null;
             try {
                 const fullAddress = `${submissionData.address}, WA`;
@@ -264,14 +262,12 @@
                 console.error("Geocoding failed, coordinates will be null.", geoErr);
             }
 
-            // Store in Firebase
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
                 location: coords,
                 timestamp: serverTimestamp()
             });
 
-            // Trigger Google Apps Script (replace with your functional URL)
             await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
                 method: 'POST',
                 mode: 'no-cors',
