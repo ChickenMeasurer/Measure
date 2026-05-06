@@ -43,26 +43,29 @@
 
         .address-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
+            margin-top: 8px;
         }
 
         .address-group input {
-            flex: 1;
+            margin-top: 0;
+            flex: 1; /* Takes up the available input space */
         }
 
         .check-btn {
             background: #4e342e;
             color: white;
             border: none;
-            padding: 12px 15px;
-            margin-top: 8px;
+            padding: 12px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-weight: bold;
             text-transform: uppercase;
             transition: background 0.3s;
+            width: 60px; /* Forces a compact, small width */
+            white-space: nowrap;
         }
 
         .check-btn:hover {
@@ -87,12 +90,12 @@
         .radio-option { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; font-size: 0.95em; font-weight: 500; }
         .radio-option input { width: auto; margin-top: 0; margin-right: 10px; height: 18px; width: 18px; accent-color: #3e2723; }
 
-        button { 
+        button.submit-btn { 
             width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
             margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
             letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
         }
-        button:hover { background: #5d4037; }
+        button.submit-btn:hover { background: #5d4037; }
     </style>
 </head>
 <body>
@@ -143,7 +146,7 @@
             </label>
         </div>
 
-        <button type="submit" id="submitBtn">Submit Request</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
     </form>
 </div>
 
@@ -202,16 +205,16 @@
             
             if (data && data.length > 0) {
                 alert(`Found: ${data[0].display_name}`);
-                btn.innerText = "Check";
+                btn.innerText = "Test";
                 btn.style.background = "#2e7d32"; // Success: turns green
             } else {
                 alert("Address not found within Washington bounds. Please check the spelling.");
                 btn.style.background = "#c62828"; // Warning: turns red
-                btn.innerText = "Check";
+                btn.innerText = "Test";
             }
         } catch (err) {
             alert("Error testing the location service.");
-            btn.innerText = "Check";
+            btn.innerText = "Test";
         }
     }
 
