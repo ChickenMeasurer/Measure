@@ -22,7 +22,6 @@
         .container { 
             width: 100%;
             max-width: 500px; 
-            /* Uses your custom textbackground image with the paper texture pattern */
             background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
@@ -179,7 +178,7 @@
             const customID = `${cleanName}_${cleanPhone}`;
 
             // --- Geolocation ---
-            let coords = { lat: null, lon: null };
+            let coords = { lat: 47.0392, lon: -122.8105 }; // Default to Lacey, WA
             try {
                 const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(submissionData.address)}&limit=1`);
                 const geoData = await geoResponse.json();
@@ -188,7 +187,7 @@
                     coords.lon = parseFloat(geoData[0].lon);
                 }
             } catch (geoErr) {
-                console.error("Geocoding failed, but continuing with submission...", geoErr);
+                console.error("Geocoding failed, using default coordinates...", geoErr);
             }
 
             // 1. Firebase Store
