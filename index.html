@@ -41,6 +41,34 @@
             background: rgba(255, 255, 255, 0.85); 
         }
 
+        .address-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .address-group input {
+            flex: 1;
+        }
+
+        .check-btn {
+            background: #4e342e;
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            margin-top: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.3s;
+        }
+
+        .check-btn:hover {
+            background: #5d4037;
+        }
+
         .radio-group { 
             margin-top: 20px; 
             background: rgba(255, 255, 255, 0.5); 
@@ -80,7 +108,10 @@
         <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
 
         <label>Address</label>
-        <input type="text" name="address" id="address" placeholder="Project Address" required>
+        <div class="address-group">
+            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
+        </div>
 
         <label>What are we measuring?</label>
         <textarea name="details" id="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
@@ -151,6 +182,39 @@
         "Success! I've added your details to my clipboard. Expect a confirmation soon!"
     ];
 
+    // Expose testAddress function globally to be used in onclick=""
+    window.testAddress = async function() {
+        const addressVal = document.getElementById('address').value;
+        const btn = document.getElementById('checkBtn');
+        if (!addressVal) {
+            alert("Please enter an address first.");
+            return;
+        }
+        
+        btn.innerText = "Testing...";
+        try {
+            const fullAddress = `${addressVal}, WA`;
+            const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
+            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
+            
+            const response = await fetch(geoUrl);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                alert(`Found: ${data[0].display_name}`);
+                btn.innerText = "Check";
+                btn.style.background = "#2e7d32"; // Success: turns green
+            } else {
+                alert("Address not found within Washington bounds. Please check the spelling.");
+                btn.style.background = "#c62828"; // Warning: turns red
+                btn.innerText = "Check";
+            }
+        } catch (err) {
+            alert("Error testing the location service.");
+            btn.innerText = "Check";
+        }
+    }
+
     form.onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -178,7 +242,7 @@
             const customID = `${cleanName}_${cleanPhone}`;
 
             // --- Geolocation ---
-            let coords = null; // Removed fallback to ensure we don't accidentally drop a pin at the default location
+            let coords = null;
             try {
                 const fullAddress = `${submissionData.address}, WA`;
                 const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
@@ -192,21 +256,19 @@
                         lat: parseFloat(geoData[0].lat),
                         lon: parseFloat(geoData[0].lon)
                     };
-                } else {
-                    console.warn("Address not found within bounds. Coordinates will be null.");
                 }
             } catch (geoErr) {
                 console.error("Geocoding failed, coordinates will be null.", geoErr);
             }
 
-            // 1. Firebase Store
+            // Store in Firebase
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
-                location: coords, // May be null if geocoding didn't resolve
+                location: coords,
                 timestamp: serverTimestamp()
             });
 
-            // 2. Google Apps Script Email Trigger
+            // Trigger Google Apps Script (replace with your functional URL)
             await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
                 method: 'POST',
                 mode: 'no-cors',
