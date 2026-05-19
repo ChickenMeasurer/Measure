@@ -50,7 +50,7 @@
 
         .address-group input {
             margin-top: 0;
-            flex: 1; /* Takes up the available input space */
+            flex: 1;
         }
 
         .check-btn {
@@ -63,13 +63,17 @@
             font-size: 0.75em;
             font-weight: bold;
             text-transform: uppercase;
-            transition: background 0.3s;
-            width: 60px; /* Forces a compact, small width */
+            transition: background 0.3s, transform 0.1s;
+            width: 60px;
             white-space: nowrap;
         }
 
         .check-btn:hover {
             background: #5d4037;
+        }
+        
+        .check-btn:active {
+            transform: scale(0.95);
         }
 
         .radio-group { 
@@ -113,7 +117,7 @@
         <label>Address</label>
         <div class="address-group">
             <input type="text" name="address" id="address" placeholder="Project Address" required>
-            <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
+            <button type="button" class="check-btn" id="checkBtn">Test</button>
         </div>
 
         <label>What are we measuring?</label>
@@ -150,7 +154,9 @@
     </form>
 </div>
 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -179,44 +185,61 @@
 
     const form = document.getElementById('measureForm');
     const container = document.querySelector('.container');
+    const checkBtn = document.getElementById('checkBtn');
+
     const messages = [
         "Got it! I'm sharpening my pencils and checking the schedule. I'll be in touch soon!",
         "Request received! Time to pull out the 1/4 inch scale. I'll reach out shortly.",
         "Success! I've added your details to my clipboard. Expect a confirmation soon!"
     ];
 
-    window.testAddress = async function() {
-        const addressVal = document.getElementById('address').value;
-        const btn = document.getElementById('checkBtn');
+    // Initialize the official Google Geocoder
+    const geocoder = new google.maps.Geocoder();
+
+    // Helper function to geocode addresses reliably via Google Platform
+    async function geocodeAddress(addressText) {
+        return new Promise((resolve, reject) => {
+            geocoder.geocode({
+                address: addressText,
+                componentRestrictions: { administrativeArea: 'WA' } // Restricts lookup to Washington state
+            }, (results, status) => {
+                if (status === 'OK' && results && results.length > 0) {
+                    const lat = results[0].geometry.location.lat();
+                    const lon = results[0].geometry.location.lng();
+                    const formatted = results[0].formatted_address;
+                    resolve({ lat, lon, formatted });
+                } else {
+                    reject(new Error(`Geocoding failed with status: ${status}`));
+                }
+            });
+        });
+    }
+
+    // Explicit event listener for the UI Test button
+    checkBtn.addEventListener('click', async () => {
+        const addressVal = document.getElementById('address').value.trim();
         if (!addressVal) {
             alert("Please enter an address first.");
             return;
         }
         
-        btn.innerText = "Testing...";
-        try {
-            const fullAddress = `${addressVal}, WA`;
-            const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
-            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
-            
-            const response = await fetch(geoUrl);
-            const data = await response.json();
-            
-            if (data && data.length > 0) {
-                alert(`Found: ${data[0].display_name}`);
-                btn.innerText = "Test";
-                btn.style.background = "#2e7d32";
-            } else {
-                alert("Address not found within Washington bounds. Please check the spelling.");
-                btn.style.background = "#c62828";
-                btn.innerText = "Test";
-            }
-        } catch (err) {
-            alert("Error testing the location service.");
-            btn.innerText = "Test";
-        }
-    }
+        checkBtn.innerText = "Testing...";
+        checkBtn.style.background = "#4e342e";
 
+        try {
+            const result = await geocodeAddress(addressVal);
+            alert(`Verified Location:\n${result.formatted}`);
+            checkBtn.innerText = "Test";
+            checkBtn.style.background = "#2e7d32"; // Dark Green
+        } catch (err) {
+            console.error(err);
+            alert("Google could not verify this address inside Washington State. Please check spelling or completeness.");
+            checkBtn.innerText = "Test";
+            checkBtn.style.background = "#c62828"; // Dark Red
+        }
+    });
+
+    // Handle Form Submit Pipeline
     form.onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -243,31 +266,32 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
+            // Run address through Google service directly during submission process
             let coords = null;
             try {
-                const fullAddress = `${submissionData.address}, WA`;
-                const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
-                const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
-                
-                const geoResponse = await fetch(geoUrl);
-                const geoData = await geoResponse.json();
-                
-                if (geoData && geoData.length > 0) {
-                    coords = {
-                        lat: parseFloat(geoData[0].lat),
-                        lon: parseFloat(geoData[0].lon)
-                    };
-                }
+                const result = await geocodeAddress(submissionData.address);
+                coords = {
+                    lat: result.lat,
+                    lon: result.lon
+                };
+                // Update text field to matched formatted layout for cleaner record keeping
+                submissionData.address = result.formatted; 
             } catch (geoErr) {
-                console.error("Geocoding failed, coordinates will be null.", geoErr);
+                console.error("Critical: Live submission geocoding failed.", geoErr);
+                alert("Submission halted: The address could not be verified by Google Maps. Please click 'Test' to check the address.");
+                btn.innerText = "Submit Request";
+                btn.disabled = false;
+                return; // Stop execution if we can't pin it
             }
 
+            // Write to Firestore Database
             await setDoc(doc(db, "submissions", customID), {
                 ...submissionData,
                 location: coords,
                 timestamp: serverTimestamp()
             });
 
+            // Trigger Google Apps Script Pipeline
             await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
                 method: 'POST',
                 mode: 'no-cors',
@@ -288,8 +312,8 @@
             `;
 
         } catch (error) {
-            console.error("Error:", error);
-            alert("Oops! There was a problem. Please try again.");
+            console.error("Error running application submission:", error);
+            alert("Oops! There was a problem saving your request. Please try again.");
             btn.innerText = "Submit Request";
             btn.disabled = false;
         }
