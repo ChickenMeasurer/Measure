@@ -9,7 +9,7 @@
         #map { 
             height: 100vh; 
             width: 100vw; 
-            background-color: #0b2246; /* Blueprint fallback background color */
+            background-color: #0b2246;
         }
         
         .map-label {
@@ -29,11 +29,33 @@
             pointer-events: none;
         }
 
-        /* Clean styling for standard Google InfoWindow look */
+        /* Custom blueprint styling for the info popup interior */
         .popup-container {
-            font-family: sans-serif;
-            padding: 5px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 6px 10px;
             color: #3e2723;
+            min-width: 180px;
+        }
+        
+        .popup-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #3e2723;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .popup-divider {
+            border: 0; 
+            border-top: 2px solid #3e2723; 
+            margin: 8px 0;
+            opacity: 0.3;
+        }
+
+        .popup-details {
+            font-size: 0.95em;
+            color: #5d4037;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -62,13 +84,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Default initial center on Lacey/Olympia area before data points calculate exact bounds
         const mapOptions = {
             center: { lat: 47.0379, lng: -122.9007 },
             zoom: 10,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeId: google.maps.MapTypeId.ROADMAP, // Keeps standard maps so you can see houses/buildings when zooming
+            mapTypeControl: true, // Allows you to switch to Satellite view easily right on the screen
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                position: google.maps.ControlPosition.TOP_RIGHT
+            },
             styles: [
-                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } // Cleans up map noise
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } // Removes point-of-interest clutter
             ]
         };
 
@@ -91,76 +117,71 @@
 
                         const position = { lat: lat, lng: lng };
                         
-                        // Drop a native Google Map Marker pin
                         const marker = new google.maps.Marker({
                             position: position,
                             map: map,
                             title: data.name || 'Client'
                         });
 
-                        // Attach info window click sequence
+                        // Pop-up interaction setup (Strictly hiding the street address string)
                         marker.addListener("click", () => {
                             infoWindow.setContent(`
                                 <div class="popup-container">
-                                    <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
-                                    <span style="font-size:0.9em; color:#6d4c41;">${data.address || ''}</span>
-                                    <hr style="border: 0; border-top: 1px solid #ddd; margin: 8px 0;">
-                                    <small>${data.details || 'No project notes.'}</small>
+                                    <div class="popup-title">${data.name || 'Client'}</div>
+                                    <hr class="popup-divider">
+                                    <div class="popup-details">
+                                        <strong>Project Focus:</strong><br>
+                                        ${data.details || 'No specific project notes provided.'}
+                                    </div>
                                 </div>
                             `);
                             infoWindow.open(map, marker);
                         });
 
-                        // Save geometry objects for framing and Hull tracking loops
-                        points.push(turf.point([lng, lat])); // Turf coordinates expect [longitude, latitude]
+                        points.push(turf.point([lng, lat])); 
                         bounds.extend(position);
                         hasValidPoints = true;
                     }
                 });
 
-                // Calculate and draw the coverage perimeter line if we have at least 3 pins
+                // Calculate and draw coverage hull
                 if (points.length >= 3) {
                     const featureCollection = turf.featureCollection(points);
                     const hull = turf.convex(featureCollection);
 
                     if (hull && hull.geometry && hull.geometry.coordinates) {
-                        // Extract array and map them straight into Google MVC coordinate objects
                         const pathCoords = hull.geometry.coordinates[0].map(coord => {
                             return { lat: coord[1], lng: coord[0] };
                         });
 
-                        // Generate Blueprint stylized overlay polygon hull
                         const coveragePolygon = new google.maps.Polygon({
                             paths: pathCoords,
-                            strokeColor: "#d39e3a",   // Blueprint orange/yellow stroke border line
-                            strokeOpacity: 0.7,
+                            strokeColor: "#d39e3a",   // Blueprint golden border
+                            strokeOpacity: 0.8,
                             strokeWeight: 3,
-                            fillColor: "#0b2246",     // Deep architectural blueprint overlay fill
-                            fillOpacity: 0.18
+                            fillColor: "#0b2246",     // Architectural deep blue shading
+                            fillOpacity: 0.15
                         });
 
                         coveragePolygon.setMap(map);
                     }
                 }
 
-                // Smooth fit view windows around the active boundary coordinates
                 if (hasValidPoints) {
                     map.fitBounds(bounds);
                     
-                    // Add a slight padding buffer to the auto-zoom calculation
                     const listener = google.maps.event.addListener(map, "bounds_changed", function() {
                         if (this.getZoom() > 14) {
-                            this.setZoom(14); // Prevents over-zooming on an isolated point entry
+                            this.setZoom(14); 
                         }
                         google.maps.event.removeListener(listener);
                     });
                 }
             } catch (err) {
-                console.error("Data could not be retrieved from database collection:", err);
+                console.error("Data could not be retrieved:", err);
             }
         }
 
-        // Run map build pipeline on window initialization
         google.maps.event.addDomListener(window, "load", loadCoverage);
     </script>
 </body>
