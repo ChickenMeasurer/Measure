@@ -4,15 +4,12 @@
     <title>Coverage Map | Drafting Services</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <style>
         body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         #map { 
             height: 100vh; 
             width: 100vw; 
-            /* Fallback Blueprint Color if server tiles are blocked */
-            background-color: #0b2246; 
+            background-color: #0b2246; /* Blueprint fallback background color */
         }
         
         .map-label {
@@ -32,10 +29,11 @@
             pointer-events: none;
         }
 
-        .leaflet-popup-content-wrapper {
-            background: #fdfaf7;
+        /* Clean styling for standard Google InfoWindow look */
+        .popup-container {
+            font-family: sans-serif;
+            padding: 5px;
             color: #3e2723;
-            border-radius: 4px;
         }
     </style>
 </head>
@@ -44,8 +42,9 @@
     <div class="map-label">📐 Measurement Coverage</div>
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -63,86 +62,106 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const map = L.map('map').setView([47.0379, -122.9007], 10);
+        // Default initial center on Lacey/Olympia area before data points calculate exact bounds
+        const mapOptions = {
+            center: { lat: 47.0379, lng: -122.9007 },
+            zoom: 10,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            styles: [
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } // Cleans up map noise
+            ]
+        };
 
-        // Primary Layer: OpenStreetMap Tiles
-        const standardTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
-
-        // Fallback Layer: Local Blueprint Blueprint Image (hosted in your repo)
-        const blueprintFallback = L.imageOverlay(
-            'blueprint.jpg', // Ensure this file is uploaded in the same Measure directory
-            [[46.8, -123.3], [47.3, -122.5]], // Coordinates covering the Olympia/Lacey area
-            {
-                opacity: 0.8,
-                interactive: false
-            }
-        );
-
-        // Listen for tile loading errors (fired when the network is blocked)
-        standardTiles.on('tileerror', function() {
-            console.warn("Firewall or network connection blocked: switching to blueprint fallback.");
-            
-            // Remove the broken tiles and add the local blueprint overlay instead
-            map.removeLayer(standardTiles);
-            blueprintFallback.addTo(map);
-        });
+        const map = new google.maps.Map(document.getElementById("map"), mapOptions);
+        const infoWindow = new google.maps.InfoWindow();
 
         async function loadCoverage() {
             try {
                 const querySnapshot = await getDocs(collection(db, "submissions"));
                 const points = []; 
-                const bounds = [];
+                const bounds = new google.maps.LatLngBounds();
+                let hasValidPoints = false;
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
                     if (data.location && data.location.lat && data.location.lon) {
-                        const lat = data.location.lat;
-                        const lon = data.location.lon;
+                        const lat = parseFloat(data.location.lat);
+                        const lng = parseFloat(data.location.lon);
 
-                        const marker = L.marker([lat, lon]).addTo(map);
-                        marker.bindPopup(`
-                            <div style="font-family: sans-serif;">
-                                <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
-                                <hr style="border: 0; border-top: 1px solid #ddd; margin: 5px 0;">
-                                <small>${data.details || 'No project notes.'}</small>
-                            </div>
-                        `);
+                        const position = { lat: lat, lng: lng };
+                        
+                        // Drop a native Google Map Marker pin
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: data.name || 'Client'
+                        });
 
-                        points.push(turf.point([lon, lat]));
-                        bounds.push([lat, lon]);
+                        // Attach info window click sequence
+                        marker.addListener("click", () => {
+                            infoWindow.setContent(`
+                                <div class="popup-container">
+                                    <strong style="color: #3e2723;">${data.name || 'Client'}</strong><br>
+                                    <span style="font-size:0.9em; color:#6d4c41;">${data.address || ''}</span>
+                                    <hr style="border: 0; border-top: 1px solid #ddd; margin: 8px 0;">
+                                    <small>${data.details || 'No project notes.'}</small>
+                                </div>
+                            `);
+                            infoWindow.open(map, marker);
+                        });
+
+                        // Save geometry objects for framing and Hull tracking loops
+                        points.push(turf.point([lng, lat])); // Turf coordinates expect [longitude, latitude]
+                        bounds.extend(position);
+                        hasValidPoints = true;
                     }
                 });
 
+                // Calculate and draw the coverage perimeter line if we have at least 3 pins
                 if (points.length >= 3) {
                     const featureCollection = turf.featureCollection(points);
                     const hull = turf.convex(featureCollection);
 
-                    if (hull) {
-                        L.geoJSON(hull, {
-                            style: {
-                                color: '#d39e3a',       // Blueprint-styled orange/yellow line
-                                weight: 3,
-                                opacity: 0.6,
-                                fillColor: '#0b2246',  // Deep blueprint fill
-                                fillOpacity: 0.15      // Transparent blanket
-                            }
-                        }).addTo(map);
+                    if (hull && hull.geometry && hull.geometry.coordinates) {
+                        // Extract array and map them straight into Google MVC coordinate objects
+                        const pathCoords = hull.geometry.coordinates[0].map(coord => {
+                            return { lat: coord[1], lng: coord[0] };
+                        });
+
+                        // Generate Blueprint stylized overlay polygon hull
+                        const coveragePolygon = new google.maps.Polygon({
+                            paths: pathCoords,
+                            strokeColor: "#d39e3a",   // Blueprint orange/yellow stroke border line
+                            strokeOpacity: 0.7,
+                            strokeWeight: 3,
+                            fillColor: "#0b2246",     // Deep architectural blueprint overlay fill
+                            fillOpacity: 0.18
+                        });
+
+                        coveragePolygon.setMap(map);
                     }
                 }
 
-                if (bounds.length > 0) {
-                    map.fitBounds(bounds, { padding: [80, 80] });
+                // Smooth fit view windows around the active boundary coordinates
+                if (hasValidPoints) {
+                    map.fitBounds(bounds);
+                    
+                    // Add a slight padding buffer to the auto-zoom calculation
+                    const listener = google.maps.event.addListener(map, "bounds_changed", function() {
+                        if (this.getZoom() > 14) {
+                            this.setZoom(14); // Prevents over-zooming on an isolated point entry
+                        }
+                        google.maps.event.removeListener(listener);
+                    });
                 }
             } catch (err) {
-                console.error("Data could not be retrieved:", err);
+                console.error("Data could not be retrieved from database collection:", err);
             }
         }
 
-        loadCoverage();
+        // Run map build pipeline on window initialization
+        google.maps.event.addDomListener(window, "load", loadCoverage);
     </script>
 </body>
 </html>
