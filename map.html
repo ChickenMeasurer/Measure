@@ -21,40 +21,53 @@
             padding: 12px 20px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            border-left: 5px solid #3e2723;
+            border-left: 5px solid #003399; /* Updated to brand blue */
             font-weight: bold;
-            color: #3e2723;
+            color: #003399;
             text-transform: uppercase;
             letter-spacing: 1px;
             pointer-events: none;
         }
 
-        /* Custom blueprint styling for the info popup interior */
+        /* --- Custom InfoWindow Snug Wrap CSS --- */
+        /* Forces Google's native container to shrink tightly around our contents */
+        .gm-style .gm-style-iw-c {
+            padding: 10px !important;
+            max-height: none !important;
+        }
+        
+        /* Removes unnecessary default internal scrolling wrappers */
+        .gm-style .gm-style-iw-d {
+            overflow: hidden !important;
+            max-height: none !important;
+        }
+
+        /* Branding Color Scheme styles */
         .popup-container {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            padding: 6px 10px;
-            color: #3e2723;
+            padding: 2px 5px 0px 5px; /* Extremely tight padding to reduce vertical gap */
+            color: #263238;
             min-width: 180px;
         }
         
         .popup-title {
             font-size: 1.1em;
             font-weight: bold;
-            color: #3e2723;
+            color: #003399; /* Chicken Measurer Corporate Blue */
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .popup-divider {
             border: 0; 
-            border-top: 2px solid #3e2723; 
-            margin: 8px 0;
-            opacity: 0.3;
+            border-top: 2px solid #b71c1c; /* Chicken Measurer Accent Red */
+            margin: 6px 0;
+            opacity: 0.8;
         }
 
         .popup-details {
             font-size: 0.95em;
-            color: #5d4037;
+            color: #b71c1c; /* Matching Text Red */
             line-height: 1.4;
         }
     </style>
@@ -87,14 +100,14 @@
         const mapOptions = {
             center: { lat: 47.0379, lng: -122.9007 },
             zoom: 10,
-            mapTypeId: google.maps.MapTypeId.ROADMAP, // Keeps standard maps so you can see houses/buildings when zooming
-            mapTypeControl: true, // Allows you to switch to Satellite view easily right on the screen
+            mapTypeId: google.maps.MapTypeId.ROADMAP, 
+            mapTypeControl: true, 
             mapTypeControlOptions: {
                 style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
                 position: google.maps.ControlPosition.TOP_RIGHT
             },
             styles: [
-                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } // Removes point-of-interest clutter
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } 
             ]
         };
 
@@ -123,7 +136,7 @@
                             title: data.name || 'Client'
                         });
 
-                        // Pop-up interaction setup (Strictly hiding the street address string)
+                        // Pop-up container displaying name and details using new logo color palette
                         marker.addListener("click", () => {
                             infoWindow.setContent(`
                                 <div class="popup-container">
@@ -131,7 +144,7 @@
                                     <hr class="popup-divider">
                                     <div class="popup-details">
                                         <strong>Project Focus:</strong><br>
-                                        ${data.details || 'No specific project notes provided.'}
+                                        ${data.details || 'No specific project notes.'}
                                     </div>
                                 </div>
                             `);
@@ -144,7 +157,7 @@
                     }
                 });
 
-                // Calculate and draw coverage hull
+                // Calculate and draw coverage boundary lines
                 if (points.length >= 3) {
                     const featureCollection = turf.featureCollection(points);
                     const hull = turf.convex(featureCollection);
@@ -156,11 +169,11 @@
 
                         const coveragePolygon = new google.maps.Polygon({
                             paths: pathCoords,
-                            strokeColor: "#d39e3a",   // Blueprint golden border
+                            strokeColor: "#003399",   // Crisp brand blue outline boundary line
                             strokeOpacity: 0.8,
                             strokeWeight: 3,
-                            fillColor: "#0b2246",     // Architectural deep blue shading
-                            fillOpacity: 0.15
+                            fillColor: "#003399",     // Matching brand blue shade fill tint
+                            fillOpacity: 0.12
                         });
 
                         coveragePolygon.setMap(map);
