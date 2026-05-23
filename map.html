@@ -114,6 +114,11 @@
         const map = new google.maps.Map(document.getElementById("map"), mapOptions);
         const infoWindow = new google.maps.InfoWindow();
 
+        // Close info card when clicking empty space on the background map
+        map.addListener("click", () => {
+            infoWindow.close();
+        });
+
         async function loadCoverage() {
             try {
                 const querySnapshot = await getDocs(collection(db, "submissions"));
@@ -177,6 +182,11 @@
                         });
 
                         coveragePolygon.setMap(map);
+
+                        // Close info card when clicking anywhere inside the shaded polygon area
+                        coveragePolygon.addListener("click", () => {
+                            infoWindow.close();
+                        });
                     }
                 }
 
