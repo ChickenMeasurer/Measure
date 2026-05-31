@@ -17,11 +17,11 @@
             top: 20px;
             left: 50px;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             padding: 12px 20px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            border-left: 5px solid #003399; /* Updated to brand blue */
+            border-left: 5px solid #003399;
             font-weight: bold;
             color: #003399;
             text-transform: uppercase;
@@ -29,23 +29,108 @@
             pointer-events: none;
         }
 
+        /* --- New Modern Scoreboard Dashboard Panel --- */
+        .scoreboard-panel {
+            position: absolute;
+            top: 20px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            width: 260px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-top: 5px solid #003399;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .scoreboard-header {
+            padding: 12px 15px;
+            background: #fdfaf7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            color: #003399;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .scoreboard-header:hover {
+            background: #f5efe9;
+        }
+
+        .scoreboard-toggle-icon {
+            font-size: 14px;
+            transition: transform 0.3s;
+            color: #b71c1c;
+        }
+
+        .scoreboard-content {
+            padding: 15px;
+            display: block;
+            transition: max-height 0.3s ease-out;
+            max-height: 300px;
+        }
+
+        /* Hidden state class */
+        .scoreboard-panel.collapsed .scoreboard-content {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            display: none;
+        }
+
+        .scoreboard-panel.collapsed .scoreboard-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #263238;
+        }
+        
+        .stat-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            font-weight: 500;
+        }
+
+        .stat-count {
+            font-weight: bold;
+            background: #b71c1c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            min-width: 20px;
+            text-align: center;
+        }
+
         /* --- Custom InfoWindow Snug Wrap CSS --- */
-        /* Forces Google's native container to shrink tightly around our contents */
         .gm-style .gm-style-iw-c {
             padding: 10px !important;
             max-height: none !important;
         }
         
-        /* Removes unnecessary default internal scrolling wrappers */
         .gm-style .gm-style-iw-d {
             overflow: hidden !important;
             max-height: none !important;
         }
 
-        /* Branding Color Scheme styles */
         .popup-container {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            padding: 2px 5px 0px 5px; /* Extremely tight padding to reduce vertical gap */
+            padding: 2px 5px 0px 5px;
             color: #263238;
             min-width: 180px;
         }
@@ -53,21 +138,21 @@
         .popup-title {
             font-size: 1.1em;
             font-weight: bold;
-            color: #003399; /* Chicken Measurer Corporate Blue */
+            color: #003399;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .popup-divider {
             border: 0; 
-            border-top: 2px solid #b71c1c; /* Chicken Measurer Accent Red */
+            border-top: 2px solid #b71c1c;
             margin: 6px 0;
             opacity: 0.8;
         }
 
         .popup-details {
             font-size: 0.95em;
-            color: #b71c1c; /* Matching Text Red */
+            color: #b71c1c;
             line-height: 1.4;
         }
     </style>
@@ -75,10 +160,35 @@
 <body>
 
     <div class="map-label">📐 Measurement Coverage</div>
+
+    <div class="scoreboard-panel" id="scoreboardPanel">
+        <div class="scoreboard-header" onclick="toggleScoreboard()">
+            <span>📊 Drafting Metrics</span>
+            <span class="scoreboard-toggle-icon" id="toggleIcon">▼</span>
+        </div>
+        <div class="scoreboard-content">
+            <div class="stat-line">
+                <span class="stat-label">Bedrooms Measured</span>
+                <span class="stat-count" id="countBedrooms">0</span>
+            </div>
+            <div class="stat-line">
+                <span class="stat-label">Living Rooms Measured</span>
+                <span class="stat-count" id="countLiving">0</span>
+            </div>
+            <div class="stat-line">
+                <span class="stat-label">Whole Houses Mapped</span>
+                <span class="stat-count" id="countWhole">0</span>
+            </div>
+            <div class="stat-line" style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed #d7ccc8;">
+                <span class="stat-label" style="font-weight: bold; color: #003399;">Total Sites Surveyed</span>
+                <span class="stat-count" id="countTotal" style="background: #003399;">0</span>
+            </div>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 
     <script type="module">
@@ -97,6 +207,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Keep scoreboard panel functional globally
+        window.toggleScoreboard = function() {
+            const panel = document.getElementById("scoreboardPanel");
+            panel.classList.toggle("collapsed");
+        };
+
         const mapOptions = {
             center: { lat: 47.0379, lng: -122.9007 },
             zoom: 10,
@@ -104,7 +220,7 @@
             mapTypeControl: true, 
             mapTypeControlOptions: {
                 style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-                position: google.maps.ControlPosition.TOP_RIGHT
+                position: google.maps.ControlPosition.TOP_LEFT // Shifted slightly so it won't conflict with panel
             },
             styles: [
                 { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } 
@@ -114,7 +230,7 @@
         const map = new google.maps.Map(document.getElementById("map"), mapOptions);
         const infoWindow = new google.maps.InfoWindow();
 
-        // Close info card when clicking empty space on the background map
+        // --- FIX: Click Map to Close Active Info Window ---
         map.addListener("click", () => {
             infoWindow.close();
         });
@@ -126,22 +242,35 @@
                 const bounds = new google.maps.LatLngBounds();
                 let hasValidPoints = false;
 
+                // Scoreboard tally variables
+                let bedroomTotal = 0;
+                let livingTotal = 0;
+                let wholeTotal = 0;
+                let overallSites = 0;
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
                     if (data.location && data.location.lat && data.location.lon) {
                         const lat = parseFloat(data.location.lat);
                         const lng = parseFloat(data.location.lon);
-
                         const position = { lat: lat, lng: lng };
                         
+                        overallSites++;
+
+                        // Extract project detail context to scan for metric milestones
+                        const textDetails = (data.details || "").toLowerCase();
+                        
+                        if (textDetails.includes("bedroom") || textDetails.includes("bed")) bedroomTotal++;
+                        if (textDetails.includes("living") || textDetails.includes("family room")) livingTotal++;
+                        if (textDetails.includes("whole") || textDetails.includes("entire") || textDetails.includes("house")) wholeTotal++;
+
                         const marker = new google.maps.Marker({
                             position: position,
                             map: map,
                             title: data.name || 'Client'
                         });
 
-                        // Pop-up container displaying name and details using new logo color palette
                         marker.addListener("click", () => {
                             infoWindow.setContent(`
                                 <div class="popup-container">
@@ -162,7 +291,12 @@
                     }
                 });
 
-                // Calculate and draw coverage boundary lines
+                // Update UI numbers safely
+                document.getElementById("countBedrooms").innerText = bedroomTotal;
+                document.getElementById("countLiving").innerText = livingTotal;
+                document.getElementById("countWhole").innerText = wholeTotal;
+                document.getElementById("countTotal").innerText = overallSites;
+
                 if (points.length >= 3) {
                     const featureCollection = turf.featureCollection(points);
                     const hull = turf.convex(featureCollection);
@@ -174,19 +308,14 @@
 
                         const coveragePolygon = new google.maps.Polygon({
                             paths: pathCoords,
-                            strokeColor: "#003399",   // Crisp brand blue outline boundary line
+                            strokeColor: "#003399",   
                             strokeOpacity: 0.8,
                             strokeWeight: 3,
-                            fillColor: "#003399",     // Matching brand blue shade fill tint
+                            fillColor: "#003399",     
                             fillOpacity: 0.12
                         });
 
                         coveragePolygon.setMap(map);
-
-                        // Close info card when clicking anywhere inside the shaded polygon area
-                        coveragePolygon.addListener("click", () => {
-                            infoWindow.close();
-                        });
                     }
                 }
 
