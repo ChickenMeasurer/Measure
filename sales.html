@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Upload Hub | Drafting Services</title>
+    <title>Sales Auto-Fill Hub | Drafting Services</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         body { 
@@ -28,7 +28,7 @@
             padding: 30px; 
             border-radius: 8px; 
             border: 1px solid #d7ccc8;
-            border-top: 8px solid #003399; /* Brand Corporate Blue Accent */
+            border-top: 8px solid #003399; /* Corporate Blue Accent */
             box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
         }
 
@@ -41,44 +41,57 @@
             background: rgba(255, 255, 255, 0.85); 
         }
 
-        /* Scan Section Styling */
-        .scan-box {
-            background: rgba(0, 51, 153, 0.05);
+        /* Scan Box UI Element */
+        .scan-container {
+            background: rgba(0, 51, 153, 0.04);
             border: 2px dashed #003399;
-            padding: 20px;
+            padding: 25px 15px;
             border-radius: 6px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s;
         }
 
-        .scan-box:hover {
-            background: rgba(0, 51, 153, 0.1);
+        .scan-container:hover {
+            background: rgba(0, 51, 153, 0.09);
         }
 
-        .scan-box p {
-            margin: 5px 0 0 0;
-            font-size: 0.9em;
+        .scan-title {
+            display: block;
+            font-size: 0.95em;
             font-weight: bold;
             color: #003399;
-        }
-
-        #fileInput { display: none; }
-
-        /* Status Spinner Overlay */
-        .status-message {
-            display: none;
-            font-weight: bold;
-            color: #b71c1c; /* Accent Red */
-            font-size: 0.9em;
-            text-align: center;
-            margin: 10px 0;
+            margin-top: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        /* Salesperson Segmented Grid Styling */
+        #fileInput { display: none; }
+
+        /* Status Banner */
+        .status-overlay {
+            display: none;
+            background: #fff3e0;
+            border: 1px solid #ffe0b2;
+            color: #e65100;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: pulseBg 1.5s infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            from { background: #fff3e0; }
+            to { background: #ffe0b2; }
+        }
+
+        /* Salesperson Segmented Selection Grid */
         .salesperson-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -121,11 +134,11 @@
         .radio-option input { width: auto; margin-top: 0; margin-right: 6px; height: 16px; width: 16px; accent-color: #003399; }
 
         button.submit-btn { 
-            width: 100%; background: #2e7d32; color: white; border: none; padding: 18px; 
+            width: 100%; background: #003399; color: white; border: none; padding: 18px; 
             margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
             letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
         }
-        button.submit-btn:hover { background: #1b5e20; }
+        button.submit-btn:hover { background: #002266; }
     </style>
 </head>
 <body>
@@ -133,15 +146,16 @@
 <div class="container">
     <h2>Sales Upload Hub</h2>
     
-    <div class="scan-box" onclick="document.getElementById('fileInput').click()">
-        <span style="font-size: 32px;">📸</span>
-        <p id="uploadPrompt">Tap to Snap or Upload Estimate Sheet</p>
-        <input type="file" id="fileInput" accept="image/*" onchange="processEstimatePhoto(event)">
+    <div class="scan-container" onclick="document.getElementById('fileInput').click()">
+        <span style="font-size: 36px;">📷</span>
+        <span class="scan-title" id="boxPrompt">Snap Estimate Sheet</span>
+        <input type="file" id="fileInput" accept="image/*" onchange="autoFillFromPhoto(event)">
     </div>
 
-    <div class="status-message" id="statusBox">Reading Document Fields...</div>
+    <div class="status-overlay" id="statusBar">Analyzing Document Layout...</div>
 
     <form id="measureForm">
+        
         <label>Salesperson</label>
         <div class="salesperson-grid">
             <div class="salesperson-option">
@@ -163,19 +177,19 @@
         </div>
         
         <label>Customer Name</label>
-        <input type="text" name="name" id="name" placeholder="Full Name" required>
+        <input type="text" name="name" id="name" placeholder="Extracting Full Name..." required>
 
         <label>Phone Number</label>
-        <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
+        <input type="tel" name="phone" id="phone" placeholder="Extracting Phone..." required>
 
         <label>Estimate Number (ES)</label>
-        <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES607765">
+        <input type="text" name="estimate_number" id="estimate_number" placeholder="Extracting ES Number...">
 
         <label>Address</label>
-        <input type="text" name="address" id="address" placeholder="Project Address" required>
+        <input type="text" name="address" id="address" placeholder="Extracting Project Address..." required>
 
         <label>What are we measuring?</label>
-        <textarea name="details" id="details" rows="3" placeholder="Project layout components..."></textarea>
+        <textarea name="details" id="details" rows="3" placeholder="Extracting project details/scope summary..."></textarea>
 
         <label>Days available:</label>
         <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
@@ -200,7 +214,7 @@
         </div>
 
         <input type="hidden" name="confirmation" value="Text Cell">
-        <button type="submit" class="submit-btn" id="submitBtn">Verify & Submit Request</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Verify & Confirm Request</button>
     </form>
 </div>
 
@@ -225,72 +239,76 @@
         mode: "multiple", dateFormat: "Y-m-d", minDate: "today", altInput: true, altFormat: "F j, Y", conjunction: ", "
     });
 
-    const googleKey = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
+    // Both functions share your main corporate browser gateway key safely
+    const activeKey = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
-    // Engine parser routing invoice photo directly to Gemini Vision API
-    window.processEstimatePhoto = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    // Autonomous structural image parser pipeline
+    window.autoFillFromPhoto = function(event) {
+        const selectedFile = event.target.files[0];
+        if (!selectedFile) return;
 
-        document.getElementById('uploadPrompt').innerText = file.name;
-        const statusBox = document.getElementById('statusBox');
-        statusBox.style.display = "block";
-        statusBox.innerText = "Processing Document Fields...";
+        document.getElementById('boxPrompt').innerText = "Document Staged";
+        const stateAlert = document.getElementById('statusBar');
+        stateAlert.style.display = "block";
+        stateAlert.innerText = "Extracting Fields Automatically...";
 
-        const reader = new FileReader();
-        reader.onloadend = async function() {
-            const base64Data = reader.result.split(',')[1];
+        const fileReader = new FileReader();
+        fileReader.onloadend = async function() {
+            const rawBase64 = fileReader.result.split(',')[1];
             
-            // Explicit structure instructions targeting the corporate invoice layout
-            const promptText = "Analyze this estimate sheet invoice. Extract the following properties and respond ONLY with a clean JSON object containing keys: 'name' (look under 'Ship To' or 'Sold To' first name last name), 'address' (full street address, city, state, zip found under 'Ship To'), 'es_number' (the Quote Number/Estimate string near top right), and 'details' (a short summary breakdown string of item descriptions mentioned like carpet type, padding, or countertop). Do not output markdown codeblocks, just raw JSON.";
+            // Layout target definition matching your B&R sheet quadrants exactly
+            const operationalSystemPrompt = "You are a field data transcription engine. Extract text from this B&R Flooring America corporate invoice sheet. Use these rules: 1. Find the customer name string under the 'Ship To' or 'Sold To' section blocks. 2. Find the full project target address under 'Ship To' (include street address, city, state, zip). 3. Extract the 'Quote Number' or 'Estimate' alphanumeric code string string listed on the top right area as 'es_number'. 4. Find the phone number digits string listed near customer information. 5. Summarize the items listed under Description/Inventory columns into a clean 1-line phrase (e.g. 'Living room carpet and hallway'). Respond strictly with a raw JSON data block containing the keys: 'name', 'phone', 'address', 'es_number', 'details'. Do not output any markdown code blocks or formatting tick marks, just return raw parsable text JSON.";
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleKey}`;
+            // Updated client-side direct endpoint connection string
+            const directApiEndpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
 
-            const payload = {
+            const networkPayload = {
                 contents: [{
                     parts: [
-                        { text: promptText },
-                        { inlineData: { mimeType: file.type, data: base64Data } }
+                        { text: operationalSystemPrompt },
+                        { inlineData: { mimeType: selectedFile.type, data: rawBase64 } }
                     ]
                 }]
             };
 
             try {
-                const response = await fetch(url, {
+                const endpointResponse = await fetch(directApiEndpoint, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(networkPayload)
                 });
-                const data = await response.json();
-                const rawText = data.candidates[0].content.parts[0].text.trim();
                 
-                // Strip markdown codeblock backticks if Gemini accidentally includes them
-                const cleanJsonText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                const parsedResult = JSON.parse(cleanJsonText);
+                const responseData = await endpointResponse.json();
+                const processedText = responseData.candidates[0].content.parts[0].text.trim();
+                
+                // Extra security strip to remove markdown styling strings if returned
+                const standardizedJson = processedText.replace(/```json/g, "").replace(/```/g, "").trim();
+                const structureMap = JSON.parse(standardizedJson);
 
-                // Auto-fill fields on the screen
-                if (parsedResult.name) document.getElementById('name').value = parsedResult.name;
-                if (parsedResult.es_number) document.getElementById('estimate_number').value = parsedResult.es_number;
-                if (parsedResult.address) document.getElementById('address').value = parsedResult.address;
-                if (parsedResult.details) document.getElementById('details').value = parsedResult.details;
+                // Auto-inject fields immediately directly into your DOM input slots
+                if (structureMap.name) document.getElementById('name').value = structureMap.name;
+                if (structureMap.phone) document.getElementById('phone').value = structureMap.phone;
+                if (structureMap.es_number) document.getElementById('estimate_number').value = structureMap.es_number;
+                if (structureMap.address) document.getElementById('address').value = structureMap.address;
+                if (structureMap.details) document.getElementById('details').value = structureMap.details;
 
-                statusBox.innerText = "Success! Fields Extracted.";
-                setTimeout(() => { statusBox.style.display = "none"; }, 3000);
+                stateAlert.innerText = "All Info Extracted Successfully!";
+                setTimeout(() => { stateAlert.style.display = "none"; }, 3000);
 
-            } catch (err) {
-                console.error("Gemini Parsing Breakdown: ", err);
-                statusBox.innerText = "Error parsing invoice image text.";
+            } catch (processingErr) {
+                console.error("Data transcription pipeline break: ", processingErr);
+                stateAlert.innerText = "Extraction failed. Key permissions syncing.";
             }
         };
-        reader.readAsDataURL(file);
+        fileReader.readAsDataURL(selectedFile);
     };
 
-    // Form submission processing pipeline
+    // Form write-out routing handler
     const form = document.getElementById('measureForm');
     form.onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        btn.innerText = "Submitting Entry...";
+        btn.innerText = "Submitting Data...";
         btn.disabled = true;
 
         const formDataObj = new FormData(form);
@@ -315,11 +333,10 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '') || "0000000000";
             const customID = `${cleanName}_${cleanPhone}`;
 
-            // Resolve location coordinates securely using Google Geocoding API
             let coords = null;
             try {
                 const fullAddress = `${submissionData.address}, WA`;
-                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleKey}`;
+                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${activeKey}`;
                 
                 const geoResponse = await fetch(googleGeoUrl);
                 const geoData = await geoResponse.json();
@@ -329,7 +346,7 @@
                     coords = { lat: parseFloat(loc.lat), lon: parseFloat(loc.lng) };
                 }
             } catch (geoErr) {
-                console.error("Geocoding step skipped: ", geoErr);
+                console.error("Geocoding bypassed: ", geoErr);
             }
 
             await setDoc(doc(db, "submissions", customID), {
@@ -347,17 +364,17 @@
 
             document.querySelector('.container').innerHTML = `
                 <div style="text-align: center; padding: 40px 0;">
-                    <h2 style="border:none;">Document Submitted!</h2>
-                    <p style="font-size: 1.1em; color: #263238; line-height: 1.6;">The estimate sheet details have been logged and mapped successfully.</p>
-                    <div style="font-size: 50px; margin-top: 20px;">📄✅</div>
+                    <h2 style="border:none;">Measure Request Created!</h2>
+                    <p style="font-size: 1.1em; color: #263238; line-height: 1.6;">The auto-extracted estimate sheet data has been logged to the mapping layout.</p>
+                    <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
                     <button onclick="location.reload()" style="background:none; color:#003399; text-decoration:underline; font-size: 0.9em; margin-top: 20px; border:none; cursor:pointer;">Process another sheet</button>
                 </div>
             `;
 
         } catch (error) {
-            console.error("Submission Error:", error);
-            alert("Problem submitting data package. Please verify fields and try again.");
-            btn.innerText = "Verify & Submit Request";
+            console.error("Write error block caught: ", error);
+            alert("Error finalizing entry. Please verify values.");
+            btn.innerText = "Verify & Confirm Request";
             btn.disabled = false;
         }
     };
