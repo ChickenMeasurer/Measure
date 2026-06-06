@@ -257,6 +257,7 @@
         "Success! I've added your details to my clipboard. Expect a confirmation soon!"
     ];
 
+    // UPDATED: Now uses your official Google Maps API Key to safely bypass office firewalls
     window.testAddress = async function() {
         const addressVal = document.getElementById('address').value;
         const btn = document.getElementById('checkBtn');
@@ -268,23 +269,25 @@
         btn.innerText = "Testing...";
         try {
             const fullAddress = `${addressVal}, WA`;
-            const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
-            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
+            const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
             
-            const response = await fetch(geoUrl);
+            const response = await fetch(googleGeoUrl);
             const data = await response.json();
             
-            if (data && data.length > 0) {
-                alert(`Found: ${data[0].display_name}`);
+            if (data.status === "OK" && data.results.length > 0) {
+                alert(`Found: ${data.results[0].formatted_address}`);
                 btn.innerText = "Test";
                 btn.style.background = "#2e7d32";
-            } else {
-                alert("Address not found within Washington bounds. Please check the spelling.");
+            } else if (data.status === "ZERO_RESULTS") {
+                alert("Address not found within Washington. Please check the spelling.");
                 btn.style.background = "#c62828";
+                btn.innerText = "Test";
+            } else {
+                alert(`Google Lookup Error: ${data.status}`);
                 btn.innerText = "Test";
             }
         } catch (err) {
-            alert("Error testing the location service.");
+            alert("Error testing the location service via network.");
             btn.innerText = "Test";
         }
     }
@@ -303,7 +306,7 @@
             salesperson: formDataObj.get('salesperson'),
             name: formDataObj.get('name'),
             phone: formDataObj.get('phone'),
-            estimate_number: formDataObj.get('estimate_number') || "", // Captures ES number, defaults to empty string if left blank
+            estimate_number: formDataObj.get('estimate_number') || "", 
             address: formDataObj.get('address'),
             details: formDataObj.get('details'),
             available_days: formDataObj.get('available_days'),
@@ -319,17 +322,18 @@
 
             let coords = null;
             try {
+                // Also updated the primary submit coordinate generator to use Google's API Key
                 const fullAddress = `${submissionData.address}, WA`;
-                const theBounds = "-124.848974,45.543541,-116.918112,49.002494";
-                const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&countrycodes=us&viewbox=${theBounds}&bounded=1&limit=1`;
+                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
                 
-                const geoResponse = await fetch(geoUrl);
+                const geoResponse = await fetch(googleGeoUrl);
                 const geoData = await geoResponse.json();
                 
-                if (geoData && geoData.length > 0) {
+                if (geoData.status === "OK" && geoData.results.length > 0) {
+                    const loc = geoData.results[0].geometry.location;
                     coords = {
-                        lat: parseFloat(geoData[0].lat),
-                        lon: parseFloat(geoData[0].lon)
+                        lat: parseFloat(loc.lat),
+                        lon: parseFloat(loc.lng)
                     };
                 }
             } catch (geoErr) {
