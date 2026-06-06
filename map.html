@@ -29,7 +29,7 @@
             pointer-events: none;
         }
 
-        /* --- Toggleable Dashboard Styling --- */
+        /* --- Dashboard Container --- */
         .dashboard-container {
             position: absolute;
             bottom: 30px;
@@ -62,7 +62,7 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-            width: 260px;
+            width: 265px;
             margin-top: 10px;
             border-top: 5px solid #003399;
             overflow: hidden;
@@ -71,13 +71,29 @@
 
         .dashboard-header {
             background: #f5f5f5;
-            padding: 10px 15px;
+            padding: 12px 15px;
             font-weight: bold;
             color: #003399;
             border-bottom: 1px solid #ddd;
             text-transform: uppercase;
             font-size: 0.85em;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Salesperson Filter Dropdown styling */
+        .salesperson-select {
+            padding: 4px 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #003399;
+            border: 1px solid #003399;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            outline: none;
         }
 
         .stats-list {
@@ -93,6 +109,14 @@
             font-size: 0.95em;
             color: #263238;
             border-bottom: 1px dashed #e0e0e0;
+        }
+
+        /* Highlighting total homes metric */
+        .stats-item.total-homes {
+            border-bottom: 2px solid #003399;
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            font-weight: bold;
         }
 
         .stats-item:last-child {
@@ -151,8 +175,18 @@
     <div class="dashboard-container">
         <button class="dashboard-toggle" id="toggleBtn" onclick="toggleDashboard()">📊 View Stats</button>
         <div class="dashboard-content" id="dbContent">
-            <div class="dashboard-header">Total Scanned Areas</div>
+            <div class="dashboard-header">
+                <span>Stats For:</span>
+                <select class="salesperson-select" id="salesFilter" onchange="filterStats()">
+                    <option value="TOTAL">Total</option>
+                    <option value="AS">AS</option>
+                    <option value="BC">BC</option>
+                    <option value="CL">CL</option>
+                    <option value="DF">DF</option>
+                </select>
+            </div>
             <ul class="stats-list">
+                <li class="stats-item total-homes">Total Homes Visited <span class="stats-count" id="count-total-visits">0</span></li>
                 <li class="stats-item">Whole Houses <span class="stats-count" id="count-house">0</span></li>
                 <li class="stats-item">Kitchens <span class="stats-count" id="count-kitchen">0</span></li>
                 <li class="stats-item">Bedrooms <span class="stats-count" id="count-bedroom">0</span></li>
@@ -203,7 +237,7 @@
         const map = new google.maps.Map(document.getElementById("map"), mapOptions);
         const infoWindow = new google.maps.InfoWindow();
 
-        // Dashboard Toggle UI Logic
+        // Dashboard Visibility Toggle
         window.toggleDashboard = function() {
             const content = document.getElementById("dbContent");
             const btn = document.getElementById("toggleBtn");
@@ -216,44 +250,51 @@
             }
         };
 
-        // Object tracking our total counts across all documents
-        const roomStats = {
-            house: 0,
-            kitchen: 0,
-            bedroom: 0,
-            bathroom: 0,
-            living: 0,
-            hallway: 0,
-            closet: 0,
-            stairs: 0
+        // Master store to cache raw data parsed directly from Firestore
+        let allSubmissionsData = [];
+
+        // Dynamic multi-tier mapping function to process room tags
+        function calculateStatsForFilter(targetSalesperson) {
+            const counts = { visits: 0, house: 0, kitchen: 0, bedroom: 0, bathroom: 0, living: 0, hallway: 0, closet: 0, stairs: 0 };
+
+            allSubmissionsData.forEach(item => {
+                // Filter validation check
+                if (targetSalesperson !== "TOTAL" && item.salesperson !== targetSalesperson) {
+                    return; 
+                }
+
+                counts.visits++; // Increments the specific or group volume visit count
+
+                if (item.details) {
+                    const txt = item.details.toLowerCase();
+                    if (txt.includes("whole house") || txt.includes("entire home") || txt.includes("full house")) counts.house++;
+                    if (txt.includes("kitchen") || txt.includes("counter") || txt.includes("backsplash")) counts.kitchen++;
+                    if (txt.includes("bedroom") || txt.includes("bed room") || txt.includes("primary bed")) counts.bedroom++;
+                    if (txt.includes("bath") || txt.includes("restroom") || txt.includes("powder room")) counts.bathroom++;
+                    if (txt.includes("living") || txt.includes("family room") || txt.includes("great room") || txt.includes("den")) counts.living++;
+                    if (txt.includes("hall") || txt.includes("entryway") || txt.includes("foyer")) counts.hallway++;
+                    if (txt.includes("closet") || txt.includes("wic")) counts.closet++;
+                    if (txt.includes("stair") || txt.includes("steps") || txt.includes("flight")) counts.stairs++;
+                }
+            });
+
+            // Update DOM Elements
+            document.getElementById("count-total-visits").innerText = counts.visits;
+            document.getElementById("count-house").innerText = counts.house;
+            document.getElementById("count-kitchen").innerText = counts.kitchen;
+            document.getElementById("count-bedroom").innerText = counts.bedroom;
+            document.getElementById("count-bathroom").innerText = counts.bathroom;
+            document.getElementById("count-living").innerText = counts.living;
+            document.getElementById("count-hallway").innerText = counts.hallway;
+            document.getElementById("count-closet").innerText = counts.closet;
+            document.getElementById("count-stairs").innerText = counts.stairs;
+        }
+
+        // Dropdown interactive handler callback
+        window.filterStats = function() {
+            const selectedFilter = document.getElementById("salesFilter").value;
+            calculateStatsForFilter(selectedFilter);
         };
-
-        // Text parsing function to search form details for room keywords
-        function parseRoomDetails(text) {
-            if (!text) return;
-            const cleanText = text.toLowerCase();
-
-            if (cleanText.includes("whole house") || cleanText.includes("entire home") || cleanText.includes("full house")) roomStats.house++;
-            if (cleanText.includes("kitchen") || cleanText.includes("counter") || cleanText.includes("backsplash")) roomStats.kitchen++;
-            if (cleanText.includes("bedroom") || cleanText.includes("bed room") || cleanText.includes("primary bed")) roomStats.bedroom++;
-            if (cleanText.includes("bath") || cleanText.includes("restroom") || cleanText.includes("powder room")) roomStats.bathroom++;
-            if (cleanText.includes("living") || cleanText.includes("family room") || cleanText.includes("great room") || cleanText.includes("den")) roomStats.living++;
-            if (cleanText.includes("hall") || cleanText.includes("entryway") || cleanText.includes("foyer")) roomStats.hallway++;
-            if (cleanText.includes("closet") || cleanText.includes("wic")) roomStats.closet++;
-            if (cleanText.includes("stair") || cleanText.includes("steps") || cleanText.includes("flight")) roomStats.stairs++;
-        }
-
-        // Display results to UI elements
-        function updateStatsUI() {
-            document.getElementById("count-house").innerText = roomStats.house;
-            document.getElementById("count-kitchen").innerText = roomStats.kitchen;
-            document.getElementById("count-bedroom").innerText = roomStats.bedroom;
-            document.getElementById("count-bathroom").innerText = roomStats.bathroom;
-            document.getElementById("count-living").innerText = roomStats.living;
-            document.getElementById("count-hallway").innerText = roomStats.hallway;
-            document.getElementById("count-closet").innerText = roomStats.closet;
-            document.getElementById("count-stairs").innerText = roomStats.stairs;
-        }
 
         async function loadCoverage() {
             try {
@@ -262,18 +303,20 @@
                 const bounds = new google.maps.LatLngBounds();
                 let hasValidPoints = false;
 
+                allSubmissionsData = []; // Clear array cache before filling
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // Run text parsing on every detail description found
-                    if (data.details) {
-                        parseRoomDetails(data.details);
-                    }
+                    // Push structured items into our global cache array
+                    allSubmissionsData.push({
+                        salesperson: data.salesperson || null, // Handles older records gracefully
+                        details: data.details || ""
+                    });
                     
                     if (data.location && data.location.lat && data.location.lon) {
                         const lat = parseFloat(data.location.lat);
                         const lng = parseFloat(data.location.lon);
-
                         const position = { lat: lat, lng: lng };
                         
                         const marker = new google.maps.Marker({
@@ -302,10 +345,9 @@
                     }
                 });
 
-                // Render matching scoreboard stats values onto the screen
-                updateStatsUI();
+                // Compute overall totals immediately on map initialization
+                calculateStatsForFilter("TOTAL");
 
-                // Close popups when clicking map background anywhere outside a pin
                 map.addListener("click", () => {
                     infoWindow.close();
                 });
