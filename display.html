@@ -55,7 +55,7 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+            0 { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
         }
@@ -89,12 +89,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Kiosk look: hybrid view allows seeing terrain maps/roads cleanly
+        // Map settings configured to use TERRAIN layout cleanly
         const mapOptions = {
             center: { lat: 47.0379, lng: -122.9007 },
             zoom: 10,
-            mapTypeId: google.maps.MapTypeId.HYBRID, 
-            disableDefaultUI: true, // Removes all buttons/clutter for clean display look
+            mapTypeId: google.maps.MapTypeId.TERRAIN, 
+            disableDefaultUI: true, // Clean kiosk view without buttons
             styles: [
                 { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } 
             ]
@@ -119,18 +119,22 @@
                         const lng = parseFloat(data.location.lon);
                         const pos = { lat: lat, lng: lng };
                         
-                        // Use a custom Green Checkmark icon
+                        // Custom green circle icon base containing a white check mark label
                         new google.maps.Marker({
                             position: pos,
                             map: map,
                             icon: {
-                                url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png", // Green dot as a marker
-                                labelOrigin: new google.maps.Point(15, 10), // Adjust label position
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 14,
+                                fillColor: "#2e7d32", // Operations Green
+                                fillOpacity: 0.95,
+                                strokeColor: "#ffffff",
+                                strokeWeight: 2
                             },
                             label: {
-                                text: '\u2713', // Unicode for check mark
+                                text: '\u2713', // Unicode character for Check Mark
                                 color: 'white',
-                                fontSize: '20px',
+                                fontSize: '14px',
                                 fontWeight: 'bold'
                             }
                         });
@@ -141,7 +145,7 @@
                     }
                 });
 
-                // Generate perimeter layout
+                // Generate perimeter boundaries
                 if (turfPoints.length >= 3) {
                     const featureCollection = turf.featureCollection(turfPoints);
                     const hull = turf.convex(featureCollection);
@@ -163,39 +167,36 @@
                     }
                 }
 
-                // Initialize the looping camera animation sequence
+                // Initialize the cinematic loop sequence
                 if (activePositions.length > 0) {
                     map.fitBounds(masterBounds);
-                    setTimeout(startAutopilotLoop, 6000); // Wait 6 seconds showing full grid, then roll
+                    setTimeout(startAutopilotLoop, 6000); // 6-second initial delay to showcase territory layout
                 }
 
             } catch (err) {
-                console.error("Display data pipeline break:", err);
+                console.error("Display pipeline data synchronization block:", err);
             }
         }
 
-        // The Autopilot Sequence Handler for continuous smooth panning
+        // The Autopilot Handler for continuous smooth boundary movement
         function startAutopilotLoop() {
             if (activePositions.length === 0) return;
 
-            // Target the next pin coordinate details
             const targetCoordinate = activePositions[currentPinIndex];
 
-            // Calculate a path to pan along the perimeter/hull. For simplicity, we pan to the next point directly, 
-            // but for a true perimeter pan, you'd need to pan to points on the hull.
-            // Pan smoothly to the next specific job site location
+            // 1. Pan smoothly directly to the next destination job pinpoint site
             map.panTo(targetCoordinate);
 
-            // Zoom closer after camera slide completes
+            // 2. Step in to inspect neighborhood topographic properties
             setTimeout(() => {
-                map.setZoom(14); // Tight focus zoom showing roads/satellite assets
+                map.setZoom(14); 
             }, 1200);
 
-            // Stay focused on the location, then pull back out and continue panning to the next point
+            // 3. Track immediately outward and transition straight to the next coordinate asset
             setTimeout(() => {
                 map.setZoom(10);
-                currentPinIndex = (currentPinIndex + 1) % activePositions.length; // Move to the next point
-                startAutopilotLoop(); // Continue the loop without returning to center
+                currentPinIndex = (currentPinIndex + 1) % activePositions.length; 
+                startAutopilotLoop(); 
             }, 7000);
         }
 
