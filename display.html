@@ -119,17 +119,19 @@
                         const lng = parseFloat(data.location.lon);
                         const pos = { lat: lat, lng: lng };
                         
-                        // Drop minimal styled pins for clean layout look
+                        // Use a custom Green Checkmark icon
                         new google.maps.Marker({
                             position: pos,
                             map: map,
                             icon: {
-                                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                scale: 5,
-                                fillColor: "#b71c1c",
-                                fillOpacity: 0.9,
-                                strokeColor: "#ffffff",
-                                strokeWeight: 2
+                                url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png", // Green dot as a marker
+                                labelOrigin: new google.maps.Point(15, 10), // Adjust label position
+                            },
+                            label: {
+                                text: '\u2713', // Unicode for check mark
+                                color: 'white',
+                                fontSize: '20px',
+                                fontWeight: 'bold'
                             }
                         });
 
@@ -172,32 +174,29 @@
             }
         }
 
-        // The Autopilot Sequence Handler
+        // The Autopilot Sequence Handler for continuous smooth panning
         function startAutopilotLoop() {
             if (activePositions.length === 0) return;
 
             // Target the next pin coordinate details
             const targetCoordinate = activePositions[currentPinIndex];
 
-            // 1. Pan smoothly to the specific job site location
+            // Calculate a path to pan along the perimeter/hull. For simplicity, we pan to the next point directly, 
+            // but for a true perimeter pan, you'd need to pan to points on the hull.
+            // Pan smoothly to the next specific job site location
             map.panTo(targetCoordinate);
 
-            // 2. Zoom closer after camera slide completes
+            // Zoom closer after camera slide completes
             setTimeout(() => {
                 map.setZoom(14); // Tight focus zoom showing roads/satellite assets
             }, 1200);
 
-            // 3. Stay focused on the location, then pull back out
+            // Stay focused on the location, then pull back out and continue panning to the next point
             setTimeout(() => {
                 map.setZoom(10);
-                map.panTo(masterBounds.getCenter()); // Return to center grid view
+                currentPinIndex = (currentPinIndex + 1) % activePositions.length; // Move to the next point
+                startAutopilotLoop(); // Continue the loop without returning to center
             }, 7000);
-
-            // Increment loop pointer index
-            currentPinIndex = (currentPinIndex + 1) % activePositions.length;
-
-            // Schedule next tracking jump timeline framework sequence loop (runs every 15 seconds)
-            setTimeout(startAutopilotLoop, 15000);
         }
 
         google.maps.event.addDomListener(window, "load", loadDisplayData);
