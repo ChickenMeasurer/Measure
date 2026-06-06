@@ -172,6 +172,9 @@
         <label>Phone Number</label>
         <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
 
+        <label>Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+        <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
+
         <label>Address</label>
         <div class="address-group">
             <input type="text" name="address" id="address" placeholder="Project Address" required>
@@ -297,9 +300,10 @@
         form.querySelectorAll('input[name="time"]:checked').forEach(cb => selectedTimes.push(cb.value));
 
         const submissionData = {
-            salesperson: formDataObj.get('salesperson'), // Captured salesperson value
+            salesperson: formDataObj.get('salesperson'),
             name: formDataObj.get('name'),
             phone: formDataObj.get('phone'),
+            estimate_number: formDataObj.get('estimate_number') || "", // Captures ES number, defaults to empty string if left blank
             address: formDataObj.get('address'),
             details: formDataObj.get('details'),
             available_days: formDataObj.get('available_days'),
