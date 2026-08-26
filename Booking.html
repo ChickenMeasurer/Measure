@@ -432,6 +432,7 @@
     let busySlots = [];
     let selectedDate = null;
     let selectedTime = null;
+    const geoCache = {};
 
     function getSelectedDurationMinutes() {
         const checked = document.querySelector('input[name="duration_minutes"]:checked');
@@ -470,6 +471,51 @@
             clean += ", WA";
         }
         return clean;
+    }
+
+    // Geocode helper
+    async function geocodeAddress(addrStr) {
+        const cleaned = formatCleanAddress(addrStr);
+        if (geoCache[cleaned]) return geoCache[cleaned];
+
+        return new Promise((resolve) => {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: cleaned }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    const coords = {
+                        lat: results[0].geometry.location.lat(),
+                        lng: results[0].geometry.location.lng()
+                    };
+                    geoCache[cleaned] = coords;
+                    resolve(coords);
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    // Calculate road drive distance & minutes
+    function estimateDrive(coords1, coords2) {
+        const R = 3958.8; // Radius in miles
+        const dLat = (coords2.lat - coords1.lat) * Math.PI / 180;
+        const dLon = (coords2.lng - coords1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const straightMiles = R * c;
+
+        // Apply realistic road curvature winding factor (1.3x)
+        const roadMiles = straightMiles * 1.32;
+
+        // Realistic driving speeds (higher speed on longer distances)
+        let mph = 32;
+        if (roadMiles > 25) mph = 48;
+        else if (roadMiles > 10) mph = 40;
+
+        const durationMinutes = Math.round((roadMiles / mph) * 60);
+        return { miles: Math.round(roadMiles * 10) / 10, minutes: durationMinutes };
     }
 
     function renderDateStrip() {
@@ -578,12 +624,11 @@
         document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
     }
 
-    // Google Maps Driving Route Calculation
-    function triggerDriveCheck() {
+    async function triggerDriveCheck() {
         const addressInput = document.getElementById('address');
         const currentAddr = addressInput ? addressInput.value.trim() : '';
 
-        if (!currentAddr || !selectedTime || !selectedDate || !window.google || !google.maps) {
+        if (!currentAddr || !selectedTime || !selectedDate) {
             hideTravelAlert();
             return;
         }
@@ -593,7 +638,6 @@
         const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
         const slotEnd = new Date(slotStart.getTime() + getSelectedDurationMinutes() * 60 * 1000);
 
-        // Find calendar events on this day
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
             return evStart.getFullYear() === slotStart.getFullYear() &&
@@ -606,7 +650,6 @@
             return;
         }
 
-        // 1. Check for measure right before this slot
         let referenceEvent = null;
         let isPreceding = true;
 
@@ -620,7 +663,6 @@
             }
         });
 
-        // 2. If no previous measure, check for measure right after this slot
         if (!referenceEvent) {
             dayEvents.forEach(ev => {
                 const evStart = new Date(ev.start);
@@ -638,38 +680,28 @@
             return;
         }
 
-        const originAddr = formatCleanAddress(referenceEvent.location);
-        const destAddr = formatCleanAddress(currentAddr);
+        const coordsOrigin = await geocodeAddress(referenceEvent.location);
+        const coordsDest = await geocodeAddress(currentAddr);
 
-        const directionsService = new google.maps.DirectionsService();
-        directionsService.route({
-            origin: originAddr,
-            destination: destAddr,
-            travelMode: google.maps.TravelMode.DRIVING
-        }, (result, status) => {
-            if (status === "OK" && result.routes[0] && result.routes[0].legs[0]) {
-                const leg = result.routes[0].legs[0];
-                const durationSec = leg.duration.value;
-                const durationText = leg.duration.text;
-                const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
-                const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
+        if (coordsOrigin && coordsDest) {
+            const drive = estimateDrive(coordsOrigin, coordsDest);
+            const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
+            const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
 
-                if (durationSec > 1800) { // Drive time > 30 minutes
-                    showTravelAlert(
-                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive ${relationText} <b>${refTown}</b>. Consider booking a later slot to allow adequate travel time.`,
-                        "warning"
-                    );
-                } else {
-                    showTravelAlert(
-                        `🚗 <b>Drive Buffer OK:</b> ~${durationText} drive ${relationText} ${refTown}.`,
-                        "ok"
-                    );
-                }
+            if (drive.minutes > 30) {
+                showTravelAlert(
+                    `⚠️ <b>Travel Warning:</b> ~<b>${drive.minutes} mins</b> (${drive.miles} miles) ${relationText} <b>${refTown}</b>. Consider booking a later slot to allow adequate travel time.`,
+                    "warning"
+                );
             } else {
-                console.warn("Directions request returned status:", status);
-                hideTravelAlert();
+                showTravelAlert(
+                    `🚗 <b>Drive Buffer OK:</b> ~${drive.minutes} min drive (${drive.miles} mi) ${relationText} ${refTown}.`,
+                    "ok"
+                );
             }
-        });
+        } else {
+            hideTravelAlert();
+        }
     }
 
     function showTravelAlert(html, type) {
@@ -702,27 +734,23 @@
         if (selectedTime) triggerDriveCheck();
     });
 
-    document.getElementById('checkBtn').addEventListener('click', () => {
+    document.getElementById('checkBtn').addEventListener('click', async () => {
         const addressVal = document.getElementById('address').value;
         const btn = document.getElementById('checkBtn');
         if (!addressVal) return alert("Please enter an address first.");
         
         btn.innerText = "Checking...";
-        const geocoder = new google.maps.Geocoder();
-        const fullAddress = formatCleanAddress(addressVal);
-
-        geocoder.geocode({ address: fullAddress }, (results, status) => {
-            if (status === "OK" && results[0]) {
-                alert(`Found: ${results[0].formatted_address}`);
-                btn.innerText = "Valid ✓";
-                btn.style.background = "#2e7d32";
-                triggerDriveCheck();
-            } else {
-                alert("Address not found in Washington. Please double-check spelling.");
-                btn.style.background = "#c62828";
-                btn.innerText = "Check";
-            }
-        });
+        const coords = await geocodeAddress(addressVal);
+        if (coords) {
+            alert("Address verified successfully!");
+            btn.innerText = "Valid ✓";
+            btn.style.background = "#2e7d32";
+            triggerDriveCheck();
+        } else {
+            alert("Address not found in Washington. Please double-check spelling.");
+            btn.style.background = "#c62828";
+            btn.innerText = "Check";
+        }
     });
 
     renderDateStrip();
@@ -783,18 +811,7 @@
 
             let coords = null;
             try {
-                const geocoder = new google.maps.Geocoder();
-                const geoRes = await new Promise((resolve) => {
-                    geocoder.geocode({ address: formatCleanAddress(submissionData.address) }, (results, status) => {
-                        resolve(status === "OK" && results[0] ? results[0] : null);
-                    });
-                });
-                if (geoRes) {
-                    coords = {
-                        lat: parseFloat(geoRes.geometry.location.lat()),
-                        lon: parseFloat(geoRes.geometry.location.lng())
-                    };
-                }
+                coords = await geocodeAddress(submissionData.address);
             } catch (err) {
                 console.error("Geocoding failed", err);
             }
