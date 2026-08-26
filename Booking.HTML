@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule a Measure | Drafting Services</title>
+    <style>
+        :root {
+            --primary: #3e2723;
+            --primary-light: #5d4037;
+            --surface: rgba(255, 255, 255, 0.95);
+            --border: #d7ccc8;
+            --text: #263238;
+            --accent: #2e7d32;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: url('backgroundmain.png') no-repeat center center fixed; 
+            background-size: cover;
+            padding: 20px; 
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .booking-card { 
+            width: 100%;
+            max-width: 640px; 
+            background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
+            background-blend-mode: overlay;
+            background-size: cover;
+            padding: 32px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            border-top: 8px solid var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+        }
+
+        h2 { 
+            margin-top: 0; 
+            font-weight: 400; 
+            letter-spacing: 1.5px; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid var(--primary); 
+            padding-bottom: 12px; 
+            text-align: center; 
+            color: var(--primary); 
+        }
+
+        .section-label {
+            display: block;
+            margin-top: 22px;
+            font-weight: 700;
+            font-size: 0.8em;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, textarea, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px; 
+            border: 1px solid #bcaaa4; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+            background: var(--surface); 
+        }
+
+        /* Salesperson Segmented Grid */
+        .salesperson-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .salesperson-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .salesperson-label {
+            display: block;
+            background: var(--surface);
+            border: 1px solid #bcaaa4;
+            padding: 10px 0;
+            border-radius: 6px;
+            font-weight: bold;
+            color: var(--primary-light);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .salesperson-option input:checked + .salesperson-label {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .address-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .address-group input { margin-top: 0; flex: 1; }
+
+        .check-btn {
+            background: var(--primary-light);
+            color: white;
+            border: none;
+            padding: 12px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            width: auto;
+        }
+
+        /* Outlook Date Strip */
+        .date-strip {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 2px;
+            margin-top: 8px;
+            scrollbar-width: thin;
+        }
+
+        .date-pill {
+            flex: 0 0 74px;
+            padding: 10px 4px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .date-pill .day-name { font-size: 0.75em; text-transform: uppercase; color: #78909c; font-weight: 700; }
+        .date-pill .day-num { font-size: 1.3em; font-weight: 800; color: var(--primary); margin-top: 2px; }
+        .date-pill .month-name { font-size: 0.7em; color: #546e7a; }
+
+        .date-pill.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px rgba(62,39,35,0.3);
+        }
+        .date-pill.selected .day-name, 
+        .date-pill.selected .day-num, 
+        .date-pill.selected .month-name { color: #ffffff; }
+
+        /* Outlook Slot Grid */
+        .time-slots-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .slot-btn {
+            background: #ffffff;
+            border: 1px solid #cfd8dc;
+            padding: 10px 6px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #37474f;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .slot-btn:hover:not(.busy) {
+            border-color: var(--primary);
+            background: #efebe9;
+        }
+
+        .slot-btn.selected {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 2px 6px rgba(46,125,50,0.3);
+        }
+
+        .slot-btn.busy {
+            background: #eceff1;
+            color: #90a4ae;
+            border-color: #e0e0e0;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .radio-group { 
+            margin-top: 18px; 
+            background: rgba(255, 255, 255, 0.6); 
+            padding: 12px 16px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
+        }
+        .radio-option { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.85em; font-weight: 500; cursor: pointer; }
+        .radio-option input { width: auto; margin: 0 8px 0 0; accent-color: var(--primary); }
+
+        button.submit-btn { 
+            width: 100%; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 16px; 
+            margin-top: 24px; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            letter-spacing: 1.5px; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            transition: background 0.2s;
+        }
+        button.submit-btn:hover { background: var(--primary-light); }
+    </style>
+</head>
+<body>
+
+<div class="booking-card">
+    <h2>Schedule a Measure</h2>
+    <form id="measureForm">
+        
+        <label class="section-label">Salesperson</label>
+        <div class="salesperson-grid">
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_as" value="AS" required>
+                <label for="sales_as" class="salesperson-label">AS</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_bc" value="BC">
+                <label for="sales_bc" class="salesperson-label">BC</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_cl" value="CL">
+                <label for="sales_cl" class="salesperson-label">CL</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_df" value="DF">
+                <label for="sales_df" class="salesperson-label">DF</label>
+            </div>
+        </div>
+        
+        <label class="section-label">Customer Name</label>
+        <input type="text" name="name" id="name" placeholder="Full Name" required>
+
+        <label class="section-label">Phone Number</label>
+        <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
+
+        <label class="section-label">Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+        <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
+
+        <label class="section-label">Address</label>
+        <div class="address-group">
+            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
+        </div>
+
+        <label class="section-label">What are we measuring?</label>
+        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath..."></textarea>
+
+        <!-- Outlook Style Schedule Picker -->
+        <label class="section-label">1. Choose Date</label>
+        <div class="date-strip" id="dateStrip"></div>
+
+        <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
+        <div class="time-slots-container" id="timeSlotsContainer">
+            <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
+        </div>
+
+        <!-- Hidden inputs storing selected values for submit -->
+        <input type="hidden" name="available_days" id="selectedDateInput" required>
+        <input type="hidden" name="selected_time" id="selectedTimeInput" required>
+
+        <div class="radio-group">
+            <label style="margin-top:0; padding-bottom:8px; font-weight:700; font-size:0.75em; text-transform:uppercase;">Confirmation Preference</label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Text Cell" checked> 
+                This is a cell phone, please text to confirm.
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Phone Call"> 
+                I would prefer a phone call to confirm.
+            </label>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Confirm Booking</button>
+    </form>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
+      authDomain: "chickenmeasurer-37304.firebaseapp.com",
+      projectId: "chickenmeasurer-37304",
+      storageBucket: "chickenmeasurer-37304.firebasestorage.app",
+      messagingSenderId: "871581751225",
+      appId: "1:871581751225:web:bec4978ba235c1c4418868",
+      measurementId: "G-Q6YZZ205BG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-test.cloudfunctions.net/getBusySlots";
+
+    const TIME_SLOTS = [
+        "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
+        "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", 
+        "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", 
+        "2:30 PM", "3:00 PM", "3:30 PM"
+    ];
+
+    let busySlots = [];
+    let selectedDate = null;
+    let selectedTime = null;
+
+    function timeStrToMinutes(timeStr) {
+        const [time, modifier] = timeStr.trim().split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+    }
+
+    // Build the 14-day horizontal Outlook date carousel
+    function renderDateStrip() {
+        const strip = document.getElementById('dateStrip');
+        strip.innerHTML = '';
+        const today = new Date();
+
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        for (let i = 0; i < 14; i++) {
+            const d = new Date();
+            d.setDate(today.getDate() + i);
+
+            // Skip Sundays if you do not measure on Sundays
+            if (d.getDay() === 0) continue;
+
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            const pill = document.createElement('div');
+            pill.className = 'date-pill';
+            if (i === 0 && !selectedDate) {
+                pill.classList.add('selected');
+                selectedDate = dateStr;
+                document.getElementById('selectedDateInput').value = dateStr;
+            }
+
+            pill.innerHTML = `
+                <div class="day-name">${days[d.getDay()]}</div>
+                <div class="day-num">${d.getDate()}</div>
+                <div class="month-name">${months[d.getMonth()]}</div>
+            `;
+
+            pill.onclick = () => {
+                document.querySelectorAll('.date-pill').forEach(p => p.classList.remove('selected'));
+                pill.classList.add('selected');
+                selectedDate = dateStr;
+                document.getElementById('selectedDateInput').value = dateStr;
+                renderTimeSlots();
+            };
+
+            strip.appendChild(pill);
+        }
+    }
+
+    // Render slot grid with 30m travel buffer checks
+    function renderTimeSlots() {
+        const container = document.getElementById('timeSlotsContainer');
+        container.innerHTML = '';
+        if (!selectedDate) return;
+
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const BUFFER_MS = 30 * 60 * 1000;
+        const SLOT_MS = 30 * 60 * 1000;
+
+        let availableCount = 0;
+
+        TIME_SLOTS.forEach(timeStr => {
+            const minutes = timeStrToMinutes(timeStr);
+            const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
+            const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
+
+            const isBusy = busySlots.some(busy => {
+                const bStart = new Date(new Date(busy.start).getTime() - BUFFER_MS);
+                const bEnd = new Date(new Date(busy.end).getTime() + BUFFER_MS);
+                return slotStart < bEnd && slotEnd > bStart;
+            });
+
+            const btn = document.createElement('div');
+            btn.className = `slot-btn ${isBusy ? 'busy' : ''}`;
+            btn.innerText = timeStr;
+
+            if (selectedTime === timeStr && !isBusy) {
+                btn.classList.add('selected');
+            }
+
+            if (!isBusy) {
+                availableCount++;
+                btn.onclick = () => {
+                    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedTime = timeStr;
+                    document.getElementById('selectedTimeInput').value = timeStr;
+                };
+            }
+
+            container.appendChild(btn);
+        });
+
+        document.getElementById('slotStatus').innerText = `(${availableCount} openings)`;
+    }
+
+    async function initCalendar() {
+        renderDateStrip();
+        try {
+            const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
+            if (res.ok) {
+                const data = await res.json();
+                busySlots = data.busySlots || [];
+                renderTimeSlots();
+            }
+        } catch (e) {
+            console.warn("Could not load calendar availability", e);
+            renderTimeSlots();
+        }
+    }
+    initCalendar();
+
+    window.testAddress = async function() {
+        const addressVal = document.getElementById('address').value;
+        const btn = document.getElementById('checkBtn');
+        if (!addressVal) return alert("Please enter an address first.");
+        
+        btn.innerText = "Checking...";
+        try {
+            const fullAddress = `${addressVal}, WA`;
+            const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
+            const res = await fetch(googleGeoUrl);
+            const data = await res.json();
+            
+            if (data.status === "OK" && data.results.length > 0) {
+                alert(`Found: ${data.results[0].formatted_address}`);
+                btn.innerText = "Valid ✓";
+                btn.style.background = "#2e7d32";
+            } else {
+                alert("Address not found in Washington. Please double-check spelling.");
+                btn.style.background = "#c62828";
+                btn.innerText = "Check";
+            }
+        } catch (err) {
+            alert("Error testing address network.");
+            btn.innerText = "Check";
+        }
+    }
+
+    const form = document.getElementById('measureForm');
+    const container = document.querySelector('.booking-card');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+
+        if (!selectedTime) {
+            alert("Please pick an available time slot before submitting.");
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Booking Measure...";
+        btn.disabled = true;
+
+        const formDataObj = new FormData(form);
+
+        const submissionData = {
+            salesperson: formDataObj.get('salesperson'),
+            name: formDataObj.get('name'),
+            phone: formDataObj.get('phone'),
+            estimate_number: formDataObj.get('estimate_number') || "", 
+            address: formDataObj.get('address'),
+            details: formDataObj.get('details'),
+            available_days: formDataObj.get('available_days'),
+            preferred_times: [formDataObj.get('selected_time')],
+            confirmation: formDataObj.get('confirmation'),
+            submitted_at: new Date().toLocaleString()
+        };
+
+        try {
+            const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
+            const cleanPhone = submissionData.phone.replace(/\D/g, '');
+            const customID = `${cleanName}_${cleanPhone}`;
+
+            let coords = null;
+            try {
+                const fullAddress = `${submissionData.address}, WA`;
+                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
+                const geoRes = await fetch(googleGeoUrl);
+                const geoData = await geoRes.json();
+                if (geoData.status === "OK" && geoData.results.length > 0) {
+                    coords = {
+                        lat: parseFloat(geoData.results[0].geometry.location.lat),
+                        lon: parseFloat(geoData.results[0].geometry.location.lng)
+                    };
+                }
+            } catch (err) {
+                console.error("Geocoding failed", err);
+            }
+
+            await setDoc(doc(db, "submissions", customID), {
+                ...submissionData,
+                location: coords,
+                timestamp: serverTimestamp()
+            });
+
+            await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(submissionData),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 0;">
+                    <h2 style="border:none;">Measure Scheduled!</h2>
+                    <p style="font-size: 1.15em; color: #4e342e; line-height: 1.6;">
+                        Booked for <b>${submissionData.available_days}</b> at <b>${submissionData.preferred_times[0]}</b>.<br>
+                        Details added to clipboard & invitation sent to Outlook.
+                    </p>
+                    <div style="font-size: 55px; margin: 20px 0;">📐📅✅</div>
+                    <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.9em; border:none; cursor:pointer;">Book another measure</button>
+                </div>
+            `;
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Oops! There was a problem booking the measure. Please try again.");
+            btn.innerText = "Confirm Booking";
+            btn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
