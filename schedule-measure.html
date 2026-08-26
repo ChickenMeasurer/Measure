@@ -274,9 +274,11 @@
 
         statusSpan.innerText = "(Strikethrough = busy on calendar)";
 
+        const BUFFER_MINUTES = 30; // 30-minute cushion before & after Outlook events
+        const SLOT_DURATION_MINUTES = 30; // 30-minute standard appointment length
+
         checkboxes.forEach(cb => {
             const slotMinutes = timeStrToMinutes(cb.value);
-            const slotDuration = 60; // 60-minute window for a measure appointment
 
             let isBusyAnySelectedDay = false;
 
@@ -285,13 +287,17 @@
                 const month = dateObj.getMonth();
                 const day = dateObj.getDate();
 
+                // Candidate appointment window (e.g., 9:00 AM - 9:30 AM)
                 const slotStart = new Date(year, month, day, Math.floor(slotMinutes / 60), slotMinutes % 60, 0);
-                const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
+                const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60000);
 
                 const conflict = busySlots.some(busy => {
-                    const bStart = new Date(busy.start);
-                    const bEnd = new Date(busy.end);
-                    return slotStart < bEnd && slotEnd > bStart;
+                    // Expand Outlook event by 30 mins on each side
+                    const bufferedStart = new Date(new Date(busy.start).getTime() - BUFFER_MINUTES * 60000);
+                    const bufferedEnd = new Date(new Date(busy.end).getTime() + BUFFER_MINUTES * 60000);
+
+                    // Overlap check
+                    return slotStart < bufferedEnd && slotEnd > bufferedStart;
                 });
 
                 if (conflict) {
@@ -311,7 +317,7 @@
         });
     }
 
-    flatpickr("#datePicker", {
+    const picker = flatpickr("#datePicker", {
         mode: "multiple",
         dateFormat: "Y-m-d",
         minDate: "today",
@@ -330,6 +336,11 @@
                 const data = await res.json();
                 busySlots = data.busySlots || [];
                 console.log(`Loaded ${busySlots.length} busy events from Outlook.`);
+
+                // Immediately apply availability check if dates are already chosen
+                if (picker.selectedDates && picker.selectedDates.length > 0) {
+                    updateTimeAvailability(picker.selectedDates);
+                }
             }
         } catch (e) {
             console.warn("Could not load Outlook availability, all slots remain open.", e);
