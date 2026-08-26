@@ -76,16 +76,16 @@
             background: var(--surface); 
         }
 
-        .salesperson-grid {
+        .segmented-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 8px;
             margin-top: 6px;
         }
 
-        .salesperson-option { position: relative; }
-        .salesperson-option input { position: absolute; opacity: 0; }
-        .salesperson-label {
+        .segmented-option { position: relative; }
+        .segmented-option input { position: absolute; opacity: 0; }
+        .segmented-label {
             display: block;
             background: var(--surface);
             border: 1px solid #bcaaa4;
@@ -96,9 +96,10 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.88em;
         }
 
-        .salesperson-option input:checked + .salesperson-label {
+        .segmented-option input:checked + .segmented-label {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
@@ -288,22 +289,22 @@
     <form id="measureForm">
         
         <label class="section-label">Salesperson</label>
-        <div class="salesperson-grid">
-            <div class="salesperson-option">
+        <div class="segmented-grid">
+            <div class="segmented-option">
                 <input type="radio" name="salesperson" id="sales_as" value="AS" required>
-                <label for="sales_as" class="salesperson-label">AS</label>
+                <label for="sales_as" class="segmented-label">AS</label>
             </div>
-            <div class="salesperson-option">
+            <div class="segmented-option">
                 <input type="radio" name="salesperson" id="sales_bc" value="BC">
-                <label for="sales_bc" class="salesperson-label">BC</label>
+                <label for="sales_bc" class="segmented-label">BC</label>
             </div>
-            <div class="salesperson-option">
+            <div class="segmented-option">
                 <input type="radio" name="salesperson" id="sales_cl" value="CL">
-                <label for="sales_cl" class="salesperson-label">CL</label>
+                <label for="sales_cl" class="segmented-label">CL</label>
             </div>
-            <div class="salesperson-option">
+            <div class="segmented-option">
                 <input type="radio" name="salesperson" id="sales_df" value="DF">
-                <label for="sales_df" class="salesperson-label">DF</label>
+                <label for="sales_df" class="segmented-label">DF</label>
             </div>
         </div>
         
@@ -325,19 +326,36 @@
         <label class="section-label">What are we measuring?</label>
         <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
 
-        <!-- 1. Choose Date Carousel -->
+        <label class="section-label">Estimated Measure Duration</label>
+        <div class="segmented-grid">
+            <div class="segmented-option">
+                <input type="radio" name="duration_minutes" id="dur_30" value="30">
+                <label for="dur_30" class="segmented-label">30 Min</label>
+            </div>
+            <div class="segmented-option">
+                <input type="radio" name="duration_minutes" id="dur_60" value="60" checked>
+                <label for="dur_60" class="segmented-label">1 Hour</label>
+            </div>
+            <div class="segmented-option">
+                <input type="radio" name="duration_minutes" id="dur_90" value="90">
+                <label for="dur_90" class="segmented-label">1.5 Hours</label>
+            </div>
+            <div class="segmented-option">
+                <input type="radio" name="duration_minutes" id="dur_120" value="120">
+                <label for="dur_120" class="segmented-label">2 Hours</label>
+            </div>
+        </div>
+
         <label class="section-label">1. Choose Date</label>
         <div class="date-strip-wrapper">
             <div class="date-strip" id="dateStrip"></div>
         </div>
 
-        <!-- 2. Select Time Slot -->
         <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
         <div class="time-slots-container" id="timeSlotsContainer">
             <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
         </div>
 
-        <!-- Travel Warning Box -->
         <div id="travelAlert" class="travel-alert"></div>
 
         <input type="hidden" name="available_days" id="selectedDateInput" required>
@@ -376,7 +394,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Tested Cloud Function calendar endpoint
+    // Production Cloud Function endpoint on chickenmeasurer-37304
     const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
     const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
@@ -390,6 +408,11 @@
     let busySlots = [];
     let selectedDate = null;
     let selectedTime = null;
+
+    function getSelectedDurationMinutes() {
+        const checked = document.querySelector('input[name="duration_minutes"]:checked');
+        return checked ? parseInt(checked.value, 10) : 60;
+    }
 
     function timeStrToMinutes(timeStr) {
         const [time, modifier] = timeStr.trim().split(' ');
@@ -471,14 +494,20 @@
 
         const [year, month, day] = selectedDate.split('-').map(Number);
         const BUFFER_MS = 30 * 60 * 1000;
-        const SLOT_MS = 30 * 60 * 1000;
+        const durationMinutes = getSelectedDurationMinutes();
+        const DURATION_MS = durationMinutes * 60 * 1000;
 
         let availableCount = 0;
 
         TIME_SLOTS.forEach(timeStr => {
             const minutes = timeStrToMinutes(timeStr);
             const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
-            const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
+            const slotEnd = new Date(slotStart.getTime() + DURATION_MS);
+
+            // Check if slot exceeds workday end (e.g., 4:30 PM cutoff)
+            if (minutes + durationMinutes > (16 * 60 + 30)) {
+                return; // Exceeds work hours
+            }
 
             const conflictingEvent = busySlots.find(busy => {
                 const bStart = new Date(new Date(busy.start).getTime() - BUFFER_MS);
@@ -584,6 +613,15 @@
         alertBox.innerHTML = '';
     }
 
+    document.querySelectorAll('input[name="duration_minutes"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            selectedTime = null;
+            document.getElementById('selectedTimeInput').value = '';
+            hideTravelAlert();
+            renderTimeSlots();
+        });
+    });
+
     document.getElementById('address').addEventListener('change', () => {
         if (selectedTime && selectedDate) {
             const [year, month, day] = selectedDate.split('-').map(Number);
@@ -658,6 +696,8 @@
         btn.disabled = true;
 
         const formDataObj = new FormData(form);
+        const durMin = getSelectedDurationMinutes();
+        const durText = durMin === 30 ? "30 min" : durMin === 60 ? "1 hr" : durMin === 90 ? "1.5 hr" : "2 hr";
 
         const submissionData = {
             salesperson: formDataObj.get('salesperson'),
@@ -666,6 +706,8 @@
             estimate_number: formDataObj.get('estimate_number') || "", 
             address: formDataObj.get('address'),
             details: formDataObj.get('details'),
+            duration: durText,
+            duration_minutes: durMin,
             available_days: formDataObj.get('available_days'),
             preferred_times: [formDataObj.get('selected_time')],
             confirmation: formDataObj.get('confirmation'),
@@ -710,7 +752,7 @@
                 <div style="text-align: center; padding: 40px 0;">
                     <h2 style="border:none;">Measure Scheduled!</h2>
                     <p style="font-size: 1.15em; color: #4e342e; line-height: 1.6;">
-                        Booked for <b>${submissionData.available_days}</b> at <b>${submissionData.preferred_times[0]}</b>.<br>
+                        Booked for <b>${submissionData.available_days}</b> at <b>${submissionData.preferred_times[0]}</b> (${submissionData.duration}).<br>
                         Details saved & calendar invitation sent to Outlook.
                     </p>
                     <div style="font-size: 55px; margin: 20px 0;">📐📅✅</div>
