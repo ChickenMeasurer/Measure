@@ -5,26 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule a Measure | Drafting Services</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_brown.css">
     <style>
-        :root {
-            --primary: #3e2723;
-            --primary-light: #5d4037;
-            --surface: rgba(255, 255, 255, 0.95);
-            --border: #d7ccc8;
-            --text: #263238;
-            --accent: #2e7d32;
-            --warning-bg: #fff3e0;
-            --warning-border: #ffe0b2;
-            --warning-text: #e65100;
-        }
-
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             background: url('backgroundmain.png') no-repeat center center fixed; 
             background-size: cover;
-            padding: 20px 10px; 
-            color: var(--text);
+            padding: 20px; 
+            color: #263238;
             margin: 0;
             display: flex;
             align-items: center;
@@ -32,215 +19,175 @@
             min-height: 100vh;
         }
 
-        .booking-card { 
+        .container { 
             width: 100%;
-            max-width: 520px; 
+            max-width: 500px; 
             background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
-            padding: 24px; 
-            border-radius: 10px; 
-            border: 1px solid var(--border);
-            border-top: 8px solid var(--primary);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
-            box-sizing: border-box;
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #d7ccc8;
+            border-top: 8px solid #3e2723;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
         }
 
-        h2 { 
-            margin-top: 0; 
-            font-weight: 400; 
-            letter-spacing: 1.5px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid var(--primary); 
-            padding-bottom: 10px; 
-            text-align: center; 
-            color: var(--primary); 
-            font-size: 1.4em;
-        }
-
-        .section-label {
-            display: block;
-            margin-top: 18px;
-            font-weight: 700;
-            font-size: 0.8em;
-            color: var(--primary-light);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
+        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
+        label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
+        
         input, textarea, select { 
-            width: 100%; 
-            padding: 12px; 
-            margin-top: 6px; 
-            border: 1px solid #bcaaa4; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 15px; 
-            background: var(--surface); 
+            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
+            border-radius: 4px; box-sizing: border-box; font-size: 16px; 
+            background: rgba(255, 255, 255, 0.85); 
         }
 
         .salesperson-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-top: 6px;
+            gap: 10px;
+            margin-top: 8px;
         }
 
-        .salesperson-option { position: relative; }
-        .salesperson-option input { position: absolute; opacity: 0; }
+        .salesperson-option {
+            position: relative;
+            text-align: center;
+        }
+
+        .salesperson-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
         .salesperson-label {
             display: block;
-            background: var(--surface);
+            background: rgba(255, 255, 255, 0.7);
             border: 1px solid #bcaaa4;
-            padding: 10px 0;
-            border-radius: 6px;
+            padding: 12px 0;
+            border-radius: 4px;
             font-weight: bold;
-            color: var(--primary-light);
-            text-align: center;
+            color: #4e342e;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            font-size: 0.95em;
         }
 
         .salesperson-option input:checked + .salesperson-label {
-            background: var(--primary);
+            background: #3e2723;
             color: white;
-            border-color: var(--primary);
+            border-color: #3e2723;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .address-group {
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-top: 6px;
+            margin-top: 8px;
         }
-        .address-group input { margin-top: 0; flex: 1; }
+
+        .address-group input {
+            margin-top: 0;
+            flex: 1;
+        }
 
         .check-btn {
-            background: var(--primary-light);
+            background: #4e342e;
             color: white;
             border: none;
-            padding: 12px 14px;
-            border-radius: 6px;
+            padding: 12px 8px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 0.75em;
             font-weight: bold;
             text-transform: uppercase;
-            width: auto;
+            transition: background 0.3s;
+            width: 60px;
+            white-space: nowrap;
         }
 
-        /* Time Slot Grid */
-        .time-slots-container {
+        .check-btn:hover {
+            background: #5d4037;
+        }
+
+        .radio-group { 
+            margin-top: 20px; 
+            background: rgba(255, 255, 255, 0.5); 
+            padding: 15px; 
+            border-radius: 4px; 
+            border: 1px solid #d7ccc8; 
+        }
+
+        .time-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 8px;
-            background: rgba(255, 255, 255, 0.6);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            max-height: 220px;
-            overflow-y: auto;
+            margin-top: 10px;
         }
 
-        .slot-btn {
-            background: #ffffff;
-            border: 1px solid #cfd8dc;
-            padding: 8px 4px;
-            border-radius: 6px;
-            font-size: 0.82em;
-            font-weight: 600;
-            color: #37474f;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 46px;
+        .radio-option { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 8px; 
+            cursor: pointer; 
+            font-size: 0.85em; 
+            font-weight: 500; 
+        }
+        .radio-option input { 
+            width: auto; 
+            margin-top: 0; 
+            margin-right: 6px; 
+            height: 16px; 
+            width: 16px; 
+            accent-color: #3e2723; 
         }
 
-        .slot-btn:hover:not(.busy) {
-            border-color: var(--primary);
-            background: #efebe9;
-        }
-
-        .slot-btn.selected {
-            background: var(--accent);
-            color: #ffffff;
-            border-color: var(--accent);
-            box-shadow: 0 2px 6px rgba(46,125,50,0.3);
-        }
-        .slot-btn.selected .slot-loc { color: #e8f5e9; }
-
-        .slot-btn.busy {
-            background: #eceff1;
-            color: #90a4ae;
-            border-color: #e0e0e0;
+        /* Dim and strike-through unavailable Outlook slots */
+        .radio-option.slot-busy {
+            opacity: 0.4;
+            text-decoration: line-through;
             cursor: not-allowed;
-            opacity: 0.75;
         }
 
-        .slot-time { font-size: 0.95em; }
-        .slot-loc {
+        .slot-town-badge {
             font-size: 0.72em;
-            font-weight: 700;
+            font-weight: bold;
             color: #8d6e63;
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
+            margin-left: 4px;
+            text-decoration: none !important;
+            display: inline-block;
         }
 
-        /* Travel Warning Box */
+        /* Driving Advisory Warning Box */
         .travel-alert {
             display: none;
-            margin-top: 10px;
+            margin-top: 12px;
             padding: 10px 14px;
-            border-radius: 6px;
-            background: var(--warning-bg);
-            border: 1px solid var(--warning-border);
-            color: var(--warning-text);
+            border-radius: 4px;
+            background: #fff3e0;
+            border: 1px solid #ffe0b2;
+            color: #e65100;
             font-size: 0.82em;
             line-height: 1.4;
         }
 
-        .radio-group { 
-            margin-top: 16px; 
-            background: rgba(255, 255, 255, 0.6); 
-            padding: 12px 14px; 
-            border-radius: 6px; 
-            border: 1px solid var(--border); 
-        }
-        .radio-option { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.85em; font-weight: 500; cursor: pointer; }
-        .radio-option input { width: auto; margin: 0 8px 0 0; accent-color: var(--primary); }
-
         button.submit-btn { 
-            width: 100%; 
-            background: var(--primary); 
-            color: white; 
-            border: none; 
-            padding: 16px; 
-            margin-top: 20px; 
-            border-radius: 6px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            letter-spacing: 1.5px; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            transition: background 0.2s;
+            width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
+            margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
+            letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
         }
-        button.submit-btn:hover { background: var(--primary-light); }
+        button.submit-btn:hover { background: #5d4037; }
     </style>
 </head>
 <body>
 
-<div class="booking-card">
+<div class="container">
     <h2>Schedule a Measure</h2>
     <form id="measureForm">
         
-        <label class="section-label">Salesperson</label>
+        <label>Salesperson</label>
         <div class="salesperson-grid">
             <div class="salesperson-option">
                 <input type="radio" name="salesperson" id="sales_as" value="AS" required>
@@ -260,40 +207,50 @@
             </div>
         </div>
         
-        <label class="section-label">Customer Name</label>
+        <label>Customer Name</label>
         <input type="text" name="name" id="name" placeholder="Full Name" required>
 
-        <label class="section-label">Phone Number</label>
+        <label>Phone Number</label>
         <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
 
-        <label class="section-label">Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+        <label>Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
         <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
 
-        <label class="section-label">Address</label>
+        <label>Address</label>
         <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <input type="text" name="address" id="address" placeholder="Project Address" required onchange="onAddressChanged()">
             <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
         </div>
 
-        <label class="section-label">What are we measuring?</label>
-        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
+        <label>What are we measuring?</label>
+        <textarea name="details" id="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
 
-        <!-- Flatpickr Full Calendar View -->
-        <label class="section-label">Choose Date</label>
-        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select measure date" required readonly>
+        <label>Days you are available:</label>
+        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
 
-        <label class="section-label">Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
-        <div class="time-slots-container" id="timeSlotsContainer">
-            <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
+        <label>Preferred Times <span id="calStatus" style="font-weight: normal; font-size: 0.8em; color: #7d635c;">(Select date to filter availability)</span></label>
+        <div class="radio-group time-grid" id="timeGrid">
+            <label class="radio-option"><input type="checkbox" name="time" value="8:30 AM"><span class="lbl-text">8:30 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="9:00 AM"><span class="lbl-text">9:00 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="9:30 AM"><span class="lbl-text">9:30 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="10:00 AM"><span class="lbl-text">10:00 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="10:30 AM"><span class="lbl-text">10:30 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="11:00 AM"><span class="lbl-text">11:00 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="11:30 AM"><span class="lbl-text">11:30 AM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="12:00 PM"><span class="lbl-text">12:00 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="12:30 PM"><span class="lbl-text">12:30 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="1:00 PM"><span class="lbl-text">1:00 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="1:30 PM"><span class="lbl-text">1:30 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="2:00 PM"><span class="lbl-text">2:00 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="2:30 PM"><span class="lbl-text">2:30 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="3:00 PM"><span class="lbl-text">3:00 PM</span></label>
+            <label class="radio-option"><input type="checkbox" name="time" value="3:30 PM"><span class="lbl-text">3:30 PM</span></label>
         </div>
 
-        <!-- Real-Time Driving Warning Box -->
         <div id="travelAlert" class="travel-alert"></div>
 
-        <input type="hidden" name="selected_time" id="selectedTimeInput" required>
-
         <div class="radio-group">
-            <label style="margin-top:0; padding-bottom:8px; font-weight:700; font-size:0.75em; text-transform:uppercase;">Confirmation Preference</label>
+            <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
             <label class="radio-option">
                 <input type="radio" name="confirmation" value="Text Cell" checked> 
                 This is a cell phone, please text to confirm.
@@ -304,7 +261,7 @@
             </label>
         </div>
 
-        <button type="submit" class="submit-btn" id="submitBtn">Confirm Booking</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
     </form>
 </div>
 
@@ -329,16 +286,7 @@
     const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
     const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
-    const TIME_SLOTS = [
-        "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
-        "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", 
-        "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", 
-        "2:30 PM", "3:00 PM", "3:30 PM"
-    ];
-
     let busySlots = [];
-    let selectedDateStr = null;
-    let selectedTime = null;
 
     function timeStrToMinutes(timeStr) {
         const [time, modifier] = timeStr.trim().split(' ');
@@ -366,68 +314,80 @@
         return "Booked";
     }
 
-    function renderTimeSlots() {
-        const container = document.getElementById('timeSlotsContainer');
-        container.innerHTML = '';
+    function updateTimeAvailability(selectedDates) {
+        const statusSpan = document.getElementById('calStatus');
+        const checkboxes = document.querySelectorAll('input[name="time"]');
 
-        if (!selectedDateStr) {
-            container.innerHTML = '<div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>';
-            document.getElementById('slotStatus').innerText = '';
+        if (!selectedDates || selectedDates.length === 0) {
+            checkboxes.forEach(cb => {
+                cb.disabled = false;
+                cb.parentElement.classList.remove('slot-busy');
+                const badge = cb.parentElement.querySelector('.slot-town-badge');
+                if (badge) badge.remove();
+            });
+            statusSpan.innerText = "(Select date to filter availability)";
+            hideTravelAlert();
             return;
         }
 
-        const [year, month, day] = selectedDateStr.split('-').map(Number);
-        const BUFFER_MS = 30 * 60 * 1000;
-        const SLOT_MS = 30 * 60 * 1000;
+        statusSpan.innerText = "(Strikethrough = busy on calendar)";
 
-        let availableCount = 0;
+        const BUFFER_MINUTES = 30;
+        const SLOT_DURATION_MINUTES = 30;
 
-        TIME_SLOTS.forEach(timeStr => {
-            const minutes = timeStrToMinutes(timeStr);
-            const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
-            const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
+        checkboxes.forEach(cb => {
+            const slotMinutes = timeStrToMinutes(cb.value);
+            let conflictingEvent = null;
 
-            const conflictingEvent = busySlots.find(busy => {
-                const bStart = new Date(new Date(busy.start).getTime() - BUFFER_MS);
-                const bEnd = new Date(new Date(busy.end).getTime() + BUFFER_MS);
-                return slotStart < bEnd && slotEnd > bStart;
-            });
+            for (const dateObj of selectedDates) {
+                const year = dateObj.getFullYear();
+                const month = dateObj.getMonth();
+                const day = dateObj.getDate();
 
-            const btn = document.createElement('div');
-            btn.className = `slot-btn ${conflictingEvent ? 'busy' : ''}`;
+                const slotStart = new Date(year, month, day, Math.floor(slotMinutes / 60), slotMinutes % 60, 0);
+                const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60000);
 
-            if (conflictingEvent) {
-                const town = extractTownName(conflictingEvent.location, conflictingEvent.summary);
-                btn.innerHTML = `
-                    <span class="slot-time">${timeStr}</span>
-                    <span class="slot-loc">📍 ${town}</span>
-                `;
-            } else {
-                availableCount++;
-                btn.innerHTML = `<span class="slot-time">${timeStr}</span>`;
-                
-                if (selectedTime === timeStr) {
-                    btn.classList.add('selected');
-                }
+                conflictingEvent = busySlots.find(busy => {
+                    const bufferedStart = new Date(new Date(busy.start).getTime() - BUFFER_MINUTES * 60000);
+                    const bufferedEnd = new Date(new Date(busy.end).getTime() + BUFFER_MINUTES * 60000);
+                    return slotStart < bufferedEnd && slotEnd > bufferedStart;
+                });
 
-                btn.onclick = () => {
-                    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    selectedTime = timeStr;
-                    document.getElementById('selectedTimeInput').value = timeStr;
-                    checkDriveDistance(slotStart);
-                };
+                if (conflictingEvent) break;
             }
 
-            container.appendChild(btn);
-        });
+            const existingBadge = cb.parentElement.querySelector('.slot-town-badge');
+            if (existingBadge) existingBadge.remove();
 
-        document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
+            if (conflictingEvent) {
+                cb.checked = false;
+                cb.disabled = true;
+                cb.parentElement.classList.add('slot-busy');
+                
+                const town = extractTownName(conflictingEvent.location, conflictingEvent.summary);
+                const badge = document.createElement('span');
+                badge.className = 'slot-town-badge';
+                badge.innerText = ` (${town})`;
+                cb.parentElement.appendChild(badge);
+            } else {
+                cb.disabled = false;
+                cb.parentElement.classList.remove('slot-busy');
+            }
+        });
     }
 
-    async function checkDriveDistance(slotStartDate) {
+    // Google Distance Matrix Drive Verification
+    async function evaluateDriveBuffer() {
         const currentAddr = document.getElementById('address').value.trim();
-        if (!currentAddr) return;
+        const checkedBox = document.querySelector('input[name="time"]:checked');
+        if (!currentAddr || !checkedBox || !picker.selectedDates || picker.selectedDates.length === 0) {
+            hideTravelAlert();
+            return;
+        }
+
+        const dateObj = picker.selectedDates[0];
+        const minutes = timeStrToMinutes(checkedBox.value);
+        const slotStartDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), Math.floor(minutes / 60), minutes % 60, 0);
 
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
@@ -466,7 +426,7 @@
 
                 if (durationSec > 1800) {
                     showTravelAlert(
-                        `⚠️ <b>Travel Advisory:</b> ~<b>${durationText}</b> drive from previous measure in <b>${prevTown}</b>. Consider booking the following slot.`
+                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive from previous measure in <b>${prevTown}</b>. Consider booking a later time.`
                     );
                 } else {
                     showTravelAlert(
@@ -491,45 +451,43 @@
         alertBox.innerHTML = '';
     }
 
-    // Flatpickr Calendar Setup
+    window.onAddressChanged = function() {
+        evaluateDriveBuffer();
+    };
+
+    document.querySelectorAll('input[name="time"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            evaluateDriveBuffer();
+        });
+    });
+
     const picker = flatpickr("#datePicker", {
+        mode: "multiple",
         dateFormat: "Y-m-d",
         minDate: "today",
         altInput: true,
         altFormat: "F j, Y",
-        disable: [
-            function(date) {
-                return (date.getDay() === 0); // Disable Sundays
-            }
-        ],
-        onChange: function(selectedDates, dateStr) {
-            selectedDateStr = dateStr;
-            selectedTime = null;
-            document.getElementById('selectedTimeInput').value = '';
-            hideTravelAlert();
-            renderTimeSlots();
+        conjunction: ", ",
+        onChange: function(selectedDates) {
+            updateTimeAvailability(selectedDates);
+            evaluateDriveBuffer();
         }
     });
 
-    async function initCalendar() {
+    async function initCalendarSync() {
         try {
             const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
-                if (selectedDateStr) renderTimeSlots();
+                if (picker.selectedDates.length > 0) {
+                    updateTimeAvailability(picker.selectedDates);
+                }
             }
         } catch (e) {
-            console.warn("Could not load calendar availability", e);
+            console.warn("Could not load Outlook availability, all slots remain open.", e);
         }
     }
-    initCalendar();
+    initCalendarSync();
 
-    window.testAddress = async function() {
-        const addressVal = document.getElementById('address').value;
-        const btn = document.getElementById('checkBtn');
-        if (!addressVal) return alert("Please enter an address first.");
-        
-        btn.innerText = "Checking...";
-        try {
-         
+    const form = document.getElementById('measureFor
