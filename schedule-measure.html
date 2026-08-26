@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Measure (Live Schedule) | Drafting Services</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            background: url('backgroundmain.png') no-repeat center center fixed; 
+            background-size: cover;
+            padding: 20px; 
+            color: #263238;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container { 
+            width: 100%;
+            max-width: 500px; 
+            background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
+            background-blend-mode: overlay;
+            background-size: cover;
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #d7ccc8;
+            border-top: 8px solid #3e2723;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
+        }
+
+        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
+        label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
+        
+        input, textarea, select { 
+            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
+            border-radius: 4px; box-sizing: border-box; font-size: 16px; 
+            background: rgba(255, 255, 255, 0.85); 
+        }
+
+        .salesperson-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .salesperson-option {
+            position: relative;
+            text-align: center;
+        }
+
+        .salesperson-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .salesperson-label {
+            display: block;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid #bcaaa4;
+            padding: 12px 0;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #4e342e;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95em;
+        }
+
+        .salesperson-option input:checked + .salesperson-label {
+            background: #3e2723;
+            color: white;
+            border-color: #3e2723;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .address-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .address-group input {
+            margin-top: 0;
+            flex: 1;
+        }
+
+        .check-btn {
+            background: #4e342e;
+            color: white;
+            border: none;
+            padding: 12px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.3s;
+            width: 60px;
+            white-space: nowrap;
+        }
+
+        .check-btn:hover {
+            background: #5d4037;
+        }
+
+        .radio-group { 
+            margin-top: 20px; 
+            background: rgba(255, 255, 255, 0.5); 
+            padding: 15px; 
+            border-radius: 4px; 
+            border: 1px solid #d7ccc8; 
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .radio-option { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; font-size: 0.85em; font-weight: 500; }
+        .radio-option input { width: auto; margin-top: 0; margin-right: 6px; height: 16px; width: 16px; accent-color: #3e2723; }
+
+        /* Dim and strike-through unavailable Outlook slots */
+        .radio-option.slot-busy {
+            opacity: 0.35;
+            text-decoration: line-through;
+            cursor: not-allowed;
+        }
+
+        button.submit-btn { 
+            width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
+            margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
+            letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
+        }
+        button.submit-btn:hover { background: #5d4037; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Request a Measure</h2>
+    <form id="measureForm">
+        
+        <label>Salesperson</label>
+        <div class="salesperson-grid">
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_as" value="AS" required>
+                <label for="sales_as" class="salesperson-label">AS</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_bc" value="BC">
+                <label for="sales_bc" class="salesperson-label">BC</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_cl" value="CL">
+                <label for="sales_cl" class="salesperson-label">CL</label>
+            </div>
+            <div class="salesperson-option">
+                <input type="radio" name="salesperson" id="sales_df" value="DF">
+                <label for="sales_df" class="salesperson-label">DF</label>
+            </div>
+        </div>
+        
+        <label>Customer Name</label>
+        <input type="text" name="name" id="name" placeholder="Full Name" required>
+
+        <label>Phone Number</label>
+        <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
+
+        <label>Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+        <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
+
+        <label>Address</label>
+        <div class="address-group">
+            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
+        </div>
+
+        <label>What are we measuring?</label>
+        <textarea name="details" id="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
+
+        <label>Days you are available:</label>
+        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
+
+        <label>Preferred Times <span id="calStatus" style="font-weight: normal; font-size: 0.8em; color: #7d635c;">(Select date to filter availability)</span></label>
+        <div class="radio-group time-grid" id="timeGrid">
+            <label class="radio-option"><input type="checkbox" name="time" value="8:30 AM"> 8:30 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="9:00 AM"> 9:00 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="9:30 AM"> 9:30 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="10:00 AM"> 10:00 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="10:30 AM"> 10:30 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="11:00 AM"> 11:00 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="11:30 AM"> 11:30 AM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="12:00 PM"> 12:00 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="12:30 PM"> 12:30 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="1:00 PM"> 1:00 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="1:30 PM"> 1:30 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="2:00 PM"> 2:00 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="2:30 PM"> 2:30 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="3:00 PM"> 3:00 PM</label>
+            <label class="radio-option"><input type="checkbox" name="time" value="3:30 PM"> 3:30 PM</label>
+        </div>
+
+        <div class="radio-group">
+            <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Text Cell" checked> 
+                This is a cell phone, please text to confirm.
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="confirmation" value="Phone Call"> 
+                I would prefer a phone call to confirm.
+            </label>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Production Firebase configuration for saving submissions
+    const firebaseConfig = {
+      apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
+      authDomain: "chickenmeasurer-37304.firebaseapp.com",
+      projectId: "chickenmeasurer-37304",
+      storageBucket: "chickenmeasurer-37304.firebasestorage.app",
+      messagingSenderId: "871581751225",
+      appId: "1:871581751225:web:bec4978ba235c1c4418868",
+      measurementId: "G-Q6YZZ205BG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Live Cloud Function endpoint on chickenmeasurer-test
+    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-test.cloudfunctions.net/getBusySlots";
+
+    let busySlots = [];
+
+    function timeStrToMinutes(timeStr) {
+        const [time, modifier] = timeStr.trim().split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+    }
+
+    function updateTimeAvailability(selectedDates) {
+        const statusSpan = document.getElementById('calStatus');
+        const checkboxes = document.querySelectorAll('input[name="time"]');
+
+        if (!selectedDates || selectedDates.length === 0) {
+            checkboxes.forEach(cb => {
+                cb.disabled = false;
+                cb.parentElement.classList.remove('slot-busy');
+            });
+            statusSpan.innerText = "(Select date to filter availability)";
+            return;
+        }
+
+        statusSpan.innerText = "(Strikethrough = busy on calendar)";
+
+        checkboxes.forEach(cb => {
+            const slotMinutes = timeStrToMinutes(cb.value);
+            const slotDuration = 60; // 60-minute window for a measure appointment
+
+            let isBusyAnySelectedDay = false;
+
+            for (const dateObj of selectedDates) {
+                const year = dateObj.getFullYear();
+                const month = dateObj.getMonth();
+                const day = dateObj.getDate();
+
+                const slotStart = new Date(year, month, day, Math.floor(slotMinutes / 60), slotMinutes % 60, 0);
+                const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
+
+                const conflict = busySlots.some(busy => {
+                    const bStart = new Date(busy.start);
+                    const bEnd = new Date(busy.end);
+                    return slotStart < bEnd && slotEnd > bStart;
+                });
+
+                if (conflict) {
+                    isBusyAnySelectedDay = true;
+                    break;
+                }
+            }
+
+            if (isBusyAnySelectedDay) {
+                cb.checked = false;
+                cb.disabled = true;
+                cb.parentElement.classList.add('slot-busy');
+            } else {
+                cb.disabled = false;
+                cb.parentElement.classList.remove('slot-busy');
+            }
+        });
+    }
+
+    flatpickr("#datePicker", {
+        mode: "multiple",
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        altInput: true,
+        altFormat: "F j, Y",
+        conjunction: ", ",
+        onChange: function(selectedDates) {
+            updateTimeAvailability(selectedDates);
+        }
+    });
+
+    async function initCalendarSync() {
+        try {
+            const res = await fetch(CALENDAR_ENDPOINT);
+            if (res.ok) {
+                const data = await res.json();
+                busySlots = data.busySlots || [];
+                console.log(`Loaded ${busySlots.length} busy events from Outlook.`);
+            }
+        } catch (e) {
+            console.warn("Could not load Outlook availability, all slots remain open.", e);
+        }
+    }
+    initCalendarSync();
+
+    const form = document.getElementById('measureForm');
+    const container = document.querySelector('.container');
+    const messages = [
+        "Got it! I'm sharpening my pencils and checking the schedule. I'll be in touch soon!",
+        "Request received! Time to pull out the 1/4 inch scale. I'll reach out shortly.",
+        "Success! I've added your details to my clipboard. Expect a confirmation soon!"
+    ];
+
+    window.testAddress = async function() {
+        const addressVal = document.getElementById('address').value;
+        const btn = document.getElementById('checkBtn');
+        if (!addressVal) {
+            alert("Please enter an address first.");
+            return;
+        }
+        
+        btn.innerText = "Testing...";
+        try {
+            const fullAddress = `${addressVal}, WA`;
+            const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
+            
+            const response = await fetch(googleGeoUrl);
+            const data = await response.json();
+            
+            if (data.status === "OK" && data.results.length > 0) {
+                alert(`Found: ${data.results[0].formatted_address}`);
+                btn.innerText = "Test";
+                btn.style.background = "#2e7d32";
+            } else if (data.status === "ZERO_RESULTS") {
+                alert("Address not found within Washington. Please check the spelling.");
+                btn.style.background = "#c62828";
+                btn.innerText = "Test";
+            } else {
+                alert(`Google Lookup Error: ${data.status}`);
+                btn.innerText = "Test";
+            }
+        } catch (err) {
+            alert("Error testing the location service via network.");
+            btn.innerText = "Test";
+        }
+    }
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        const formDataObj = new FormData(form);
+        const selectedTimes = [];
+        form.querySelectorAll('input[name="time"]:checked').forEach(cb => selectedTimes.push(cb.value));
+
+        const submissionData = {
+            salesperson: formDataObj.get('salesperson'),
+            name: formDataObj.get('name'),
+            phone: formDataObj.get('phone'),
+            estimate_number: formDataObj.get('estimate_number') || "", 
+            address: formDataObj.get('address'),
+            details: formDataObj.get('details'),
+            available_days: formDataObj.get('available_days'),
+            preferred_times: selectedTimes,
+            confirmation: formDataObj.get('confirmation'),
+            submitted_at: new Date().toLocaleString()
+        };
+
+        try {
+            const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
+            const cleanPhone = submissionData.phone.replace(/\D/g, '');
+            const customID = `${cleanName}_${cleanPhone}`;
+
+            let coords = null;
+            try {
+                const fullAddress = `${submissionData.address}, WA`;
+                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
+                
+                const geoResponse = await fetch(googleGeoUrl);
+                const geoData = await geoResponse.json();
+                
+                if (geoData.status === "OK" && geoData.results.length > 0) {
+                    const loc = geoData.results[0].geometry.location;
+                    coords = {
+                        lat: parseFloat(loc.lat),
+                        lon: parseFloat(loc.lng)
+                    };
+                }
+            } catch (geoErr) {
+                console.error("Geocoding failed, coordinates will be null.", geoErr);
+            }
+
+            await setDoc(doc(db, "submissions", customID), {
+                ...submissionData,
+                location: coords,
+                timestamp: serverTimestamp()
+            });
+
+            await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(submissionData),
+                headers: { 
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 0;">
+                    <h2 style="border:none;">Drawing Sent!</h2>
+                    <p style="font-size: 1.2em; color: #4e342e; line-height: 1.6;">${randomMsg}</p>
+                    <div style="font-size: 50px; margin-top: 20px;">📐✅</div>
+                    <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.8em; margin-top: 20px; border:none; cursor:pointer;">Send another request</button>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Oops! There was a problem. Please try again.");
+            btn.innerText = "Submit Request";
+            btn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
