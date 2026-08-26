@@ -377,7 +377,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-test.cloudfunctions.net/getBusySlots";
+    // Trusted Google Apps Script endpoint (bypasses corporate SSL/firewall proxies)
+    const CALENDAR_ENDPOINT = "https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec";
     const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
     const TIME_SLOTS = [
@@ -430,7 +431,7 @@
             const d = new Date();
             d.setDate(today.getDate() + i);
 
-            if (d.getDay() === 0) continue;
+            if (d.getDay() === 0) continue; // Skip Sundays
 
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
