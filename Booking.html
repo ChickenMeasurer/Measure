@@ -629,9 +629,13 @@
     renderDateStrip();
     renderTimeSlots();
 
+    // Fetch calendar slots through Apps Script with redirect support
     async function initCalendarSync() {
         try {
-            const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
+            const res = await fetch(`${CALENDAR_ENDPOINT}?action=getSlots&t=${Date.now()}`, {
+                method: 'GET',
+                redirect: 'follow'
+            });
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
