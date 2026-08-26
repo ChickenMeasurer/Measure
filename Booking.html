@@ -12,6 +12,9 @@
             --border: #d7ccc8;
             --text: #263238;
             --accent: #2e7d32;
+            --warning-bg: #fff3e0;
+            --warning-border: #ffe0b2;
+            --warning-text: #e65100;
         }
 
         body { 
@@ -53,7 +56,7 @@
 
         .section-label {
             display: block;
-            margin-top: 22px;
+            margin-top: 20px;
             font-weight: 700;
             font-size: 0.8em;
             color: var(--primary-light);
@@ -72,7 +75,6 @@
             background: var(--surface); 
         }
 
-        /* Salesperson Segmented Grid */
         .salesperson-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -80,11 +82,7 @@
             margin-top: 6px;
         }
 
-        .salesperson-option input {
-            position: absolute;
-            opacity: 0;
-        }
-
+        .salesperson-option input { position: absolute; opacity: 0; }
         .salesperson-label {
             display: block;
             background: var(--surface);
@@ -110,7 +108,6 @@
             align-items: center;
             margin-top: 6px;
         }
-
         .address-group input { margin-top: 0; flex: 1; }
 
         .check-btn {
@@ -132,7 +129,7 @@
             gap: 8px;
             overflow-x: auto;
             padding: 10px 2px;
-            margin-top: 8px;
+            margin-top: 6px;
             scrollbar-width: thin;
         }
 
@@ -161,24 +158,24 @@
         .date-pill.selected .day-num, 
         .date-pill.selected .month-name { color: #ffffff; }
 
-        /* Outlook Slot Grid */
+        /* Time Slot Grid */
         .time-slots-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 12px;
+            margin-top: 10px;
             background: rgba(255, 255, 255, 0.6);
-            padding: 14px;
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            max-height: 220px;
+            max-height: 240px;
             overflow-y: auto;
         }
 
         .slot-btn {
             background: #ffffff;
             border: 1px solid #cfd8dc;
-            padding: 10px 6px;
+            padding: 8px 6px;
             border-radius: 6px;
             font-size: 0.85em;
             font-weight: 600;
@@ -186,6 +183,11 @@
             cursor: pointer;
             text-align: center;
             transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 48px;
         }
 
         .slot-btn:hover:not(.busy) {
@@ -199,14 +201,45 @@
             border-color: var(--accent);
             box-shadow: 0 2px 6px rgba(46,125,50,0.3);
         }
+        .slot-btn.selected .slot-loc { color: #e8f5e9; }
 
         .slot-btn.busy {
             background: #eceff1;
             color: #90a4ae;
             border-color: #e0e0e0;
-            text-decoration: line-through;
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 0.75;
+        }
+
+        .slot-time { font-size: 0.95em; }
+        .slot-loc {
+            font-size: 0.72em;
+            font-weight: 700;
+            color: #8d6e63;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        /* Driving Advisory Warning Box */
+        .travel-alert {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            background: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+            font-size: 0.85em;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .radio-group { 
@@ -274,14 +307,14 @@
 
         <label class="section-label">Address</label>
         <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <input type="text" name="address" id="address" placeholder="Project Address (e.g., 4410 6th Ave SE, Lacey)" required onchange="onAddressChanged()">
             <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
         </div>
 
         <label class="section-label">What are we measuring?</label>
-        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath..."></textarea>
+        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
 
-        <!-- Outlook Style Schedule Picker -->
+        <!-- Outlook Schedule Picker -->
         <label class="section-label">1. Choose Date</label>
         <div class="date-strip" id="dateStrip"></div>
 
@@ -290,7 +323,9 @@
             <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
         </div>
 
-        <!-- Hidden inputs storing selected values for submit -->
+        <!-- Real-Time Driving Warning Container -->
+        <div id="travelAlert" class="travel-alert"></div>
+
         <input type="hidden" name="available_days" id="selectedDateInput" required>
         <input type="hidden" name="selected_time" id="selectedTimeInput" required>
 
@@ -327,7 +362,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-test.cloudfunctions.net/getBusySlots";
+    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
+    const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
     const TIME_SLOTS = [
         "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
@@ -348,7 +384,25 @@
         return hours * 60 + minutes;
     }
 
-    // Build the 14-day horizontal Outlook date carousel
+    function extractTownName(locationStr, summaryStr) {
+        const target = (locationStr || summaryStr || "").toLowerCase();
+        if (target.includes("shelton")) return "Shelton";
+        if (target.includes("hawks prairie") || target.includes("hawks")) return "Hawks Prairie";
+        if (target.includes("lacey")) return "Lacey";
+        if (target.includes("olympia")) return "Olympia";
+        if (target.includes("tumwater")) return "Tumwater";
+        if (target.includes("yelm")) return "Yelm";
+        if (target.includes("dupont")) return "DuPont";
+        if (target.includes("rochester")) return "Rochester";
+        if (target.includes("chehalis") || target.includes("centralia")) return "Centralia";
+        
+        // Fallback: take first part of address if available
+        if (locationStr && locationStr.includes(",")) {
+            return locationStr.split(",")[0].trim();
+        }
+        return "Booked";
+    }
+
     function renderDateStrip() {
         const strip = document.getElementById('dateStrip');
         strip.innerHTML = '';
@@ -360,9 +414,7 @@
         for (let i = 0; i < 14; i++) {
             const d = new Date();
             d.setDate(today.getDate() + i);
-
-            // Skip Sundays if you do not measure on Sundays
-            if (d.getDay() === 0) continue;
+            if (d.getDay() === 0) continue; // Skip Sundays
 
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -385,6 +437,9 @@
                 pill.classList.add('selected');
                 selectedDate = dateStr;
                 document.getElementById('selectedDateInput').value = dateStr;
+                selectedTime = null;
+                document.getElementById('selectedTimeInput').value = '';
+                hideTravelAlert();
                 renderTimeSlots();
             };
 
@@ -392,7 +447,6 @@
         }
     }
 
-    // Render slot grid with 30m travel buffer checks
     function renderTimeSlots() {
         const container = document.getElementById('timeSlotsContainer');
         container.innerHTML = '';
@@ -409,161 +463,75 @@
             const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
             const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
 
-            const isBusy = busySlots.some(busy => {
+            // Find matching conflicting event
+            const conflictingEvent = busySlots.find(busy => {
                 const bStart = new Date(new Date(busy.start).getTime() - BUFFER_MS);
                 const bEnd = new Date(new Date(busy.end).getTime() + BUFFER_MS);
                 return slotStart < bEnd && slotEnd > bStart;
             });
 
             const btn = document.createElement('div');
-            btn.className = `slot-btn ${isBusy ? 'busy' : ''}`;
-            btn.innerText = timeStr;
+            btn.className = `slot-btn ${conflictingEvent ? 'busy' : ''}`;
 
-            if (selectedTime === timeStr && !isBusy) {
-                btn.classList.add('selected');
-            }
-
-            if (!isBusy) {
+            if (conflictingEvent) {
+                const town = extractTownName(conflictingEvent.location, conflictingEvent.summary);
+                btn.innerHTML = `
+                    <span class="slot-time">${timeStr}</span>
+                    <span class="slot-loc">📍 ${town}</span>
+                `;
+            } else {
                 availableCount++;
+                btn.innerHTML = `<span class="slot-time">${timeStr}</span>`;
+                
+                if (selectedTime === timeStr) {
+                    btn.classList.add('selected');
+                }
+
                 btn.onclick = () => {
                     document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
                     selectedTime = timeStr;
                     document.getElementById('selectedTimeInput').value = timeStr;
+                    checkDriveDistance(slotStart);
                 };
             }
 
             container.appendChild(btn);
         });
 
-        document.getElementById('slotStatus').innerText = `(${availableCount} openings)`;
+        document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
     }
 
-    async function initCalendar() {
-        renderDateStrip();
-        try {
-            const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
-            if (res.ok) {
-                const data = await res.json();
-                busySlots = data.busySlots || [];
-                renderTimeSlots();
+    // Google Distance Matrix Drive Verification
+    async function checkDriveDistance(slotStartDate) {
+        const currentAddr = document.getElementById('address').value.trim();
+        if (!currentAddr) return;
+
+        // Find immediately preceding measure event on the same day
+        const dayEvents = busySlots.filter(ev => {
+            const evStart = new Date(ev.start);
+            return evStart.getFullYear() === slotStartDate.getFullYear() &&
+                   evStart.getMonth() === slotStartDate.getMonth() &&
+                   evStart.getDate() === slotStartDate.getDate();
+        });
+
+        // Find latest event that ends before this slot starts
+        let prevEvent = null;
+        dayEvents.forEach(ev => {
+            const evEnd = new Date(ev.end);
+            if (evEnd <= slotStartDate) {
+                if (!prevEvent || new Date(ev.end) > new Date(prevEvent.end)) {
+                    prevEvent = ev;
+                }
             }
-        } catch (e) {
-            console.warn("Could not load calendar availability", e);
-            renderTimeSlots();
-        }
-    }
-    initCalendar();
+        });
 
-    window.testAddress = async function() {
-        const addressVal = document.getElementById('address').value;
-        const btn = document.getElementById('checkBtn');
-        if (!addressVal) return alert("Please enter an address first.");
-        
-        btn.innerText = "Checking...";
-        try {
-            const fullAddress = `${addressVal}, WA`;
-            const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
-            const res = await fetch(googleGeoUrl);
-            const data = await res.json();
-            
-            if (data.status === "OK" && data.results.length > 0) {
-                alert(`Found: ${data.results[0].formatted_address}`);
-                btn.innerText = "Valid ✓";
-                btn.style.background = "#2e7d32";
-            } else {
-                alert("Address not found in Washington. Please double-check spelling.");
-                btn.style.background = "#c62828";
-                btn.innerText = "Check";
-            }
-        } catch (err) {
-            alert("Error testing address network.");
-            btn.innerText = "Check";
-        }
-    }
-
-    const form = document.getElementById('measureForm');
-    const container = document.querySelector('.booking-card');
-
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-
-        if (!selectedTime) {
-            alert("Please pick an available time slot before submitting.");
+        if (!prevEvent || !prevEvent.location || prevEvent.location === "Scheduled Measure") {
+            hideTravelAlert();
             return;
         }
 
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "Booking Measure...";
-        btn.disabled = true;
-
-        const formDataObj = new FormData(form);
-
-        const submissionData = {
-            salesperson: formDataObj.get('salesperson'),
-            name: formDataObj.get('name'),
-            phone: formDataObj.get('phone'),
-            estimate_number: formDataObj.get('estimate_number') || "", 
-            address: formDataObj.get('address'),
-            details: formDataObj.get('details'),
-            available_days: formDataObj.get('available_days'),
-            preferred_times: [formDataObj.get('selected_time')],
-            confirmation: formDataObj.get('confirmation'),
-            submitted_at: new Date().toLocaleString()
-        };
-
         try {
-            const cleanName = submissionData.name.trim().replace(/\s+/g, '_');
-            const cleanPhone = submissionData.phone.replace(/\D/g, '');
-            const customID = `${cleanName}_${cleanPhone}`;
-
-            let coords = null;
-            try {
-                const fullAddress = `${submissionData.address}, WA`;
-                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q`;
-                const geoRes = await fetch(googleGeoUrl);
-                const geoData = await geoRes.json();
-                if (geoData.status === "OK" && geoData.results.length > 0) {
-                    coords = {
-                        lat: parseFloat(geoData.results[0].geometry.location.lat),
-                        lon: parseFloat(geoData.results[0].geometry.location.lng)
-                    };
-                }
-            } catch (err) {
-                console.error("Geocoding failed", err);
-            }
-
-            await setDoc(doc(db, "submissions", customID), {
-                ...submissionData,
-                location: coords,
-                timestamp: serverTimestamp()
-            });
-
-            await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(submissionData),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px 0;">
-                    <h2 style="border:none;">Measure Scheduled!</h2>
-                    <p style="font-size: 1.15em; color: #4e342e; line-height: 1.6;">
-                        Booked for <b>${submissionData.available_days}</b> at <b>${submissionData.preferred_times[0]}</b>.<br>
-                        Details added to clipboard & invitation sent to Outlook.
-                    </p>
-                    <div style="font-size: 55px; margin: 20px 0;">📐📅✅</div>
-                    <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.9em; border:none; cursor:pointer;">Book another measure</button>
-                </div>
-            `;
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Oops! There was a problem booking the measure. Please try again.");
-            btn.innerText = "Confirm Booking";
-            btn.disabled = false;
-        }
-    };
-</script>
-</body>
-</html>
+            const origin = encodeURIComponent(`${prevEvent.location}, WA`);
+            const destination = encodeURIComponent(`${currentAddr}, WA`);
+            const matrixUrl = `htt
