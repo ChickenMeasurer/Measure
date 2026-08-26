@@ -15,6 +15,9 @@
             --warning-bg: #fff3e0;
             --warning-border: #ffe0b2;
             --warning-text: #e65100;
+            --success-bg: #e8f5e9;
+            --success-border: #c8e6c9;
+            --success-text: #2e7d32;
         }
 
         body { 
@@ -247,11 +250,21 @@
             margin-top: 10px;
             padding: 10px 14px;
             border-radius: 6px;
+            font-size: 0.84em;
+            line-height: 1.4;
+            transition: all 0.2s ease;
+        }
+
+        .travel-alert.warning {
             background: var(--warning-bg);
             border: 1px solid var(--warning-border);
             color: var(--warning-text);
-            font-size: 0.82em;
-            line-height: 1.4;
+        }
+
+        .travel-alert.ok {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
         }
 
         .radio-group { 
@@ -281,6 +294,9 @@
         }
         button.submit-btn:hover { background: var(--primary-light); }
     </style>
+
+    <!-- Load Google Maps JavaScript API with Geometry library for client-side drive calculations -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 </head>
 <body>
 
@@ -319,13 +335,14 @@
 
         <label class="section-label">Address</label>
         <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <input type="text" name="address" id="address" placeholder="Project Address (e.g., 4410 6th Ave SE, Lacey)" required>
             <button type="button" class="check-btn" id="checkBtn">Test</button>
         </div>
 
         <label class="section-label">What are we measuring?</label>
         <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
 
+        <!-- Estimated Duration Selector -->
         <label class="section-label">Estimated Measure Duration</label>
         <div class="segmented-grid">
             <div class="segmented-option">
@@ -346,16 +363,19 @@
             </div>
         </div>
 
+        <!-- 1. Choose Date Carousel -->
         <label class="section-label">1. Choose Date</label>
         <div class="date-strip-wrapper">
             <div class="date-strip" id="dateStrip"></div>
         </div>
 
+        <!-- 2. Select Time Slot -->
         <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
         <div class="time-slots-container" id="timeSlotsContainer">
             <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
         </div>
 
+        <!-- Real-Time Drive Distance Alert Box -->
         <div id="travelAlert" class="travel-alert"></div>
 
         <input type="hidden" name="available_days" id="selectedDateInput" required>
@@ -394,9 +414,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Production Cloud Function endpoint on chickenmeasurer-37304
     const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
-    const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
     const TIME_SLOTS = [
         "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
@@ -504,9 +522,9 @@
             const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
             const slotEnd = new Date(slotStart.getTime() + DURATION_MS);
 
-            // Check if slot exceeds workday end (e.g., 4:30 PM cutoff)
+            // Cutoff if slot runs past 4:30 PM
             if (minutes + durationMinutes > (16 * 60 + 30)) {
-                return; // Exceeds work hours
+                return;
             }
 
             const conflictingEvent = busySlots.find(busy => {
@@ -537,7 +555,7 @@
                     btn.classList.add('selected');
                     selectedTime = timeStr;
                     document.getElementById('selectedTimeInput').value = timeStr;
-                    checkDriveDistance(slotStart);
+                    evaluateDriveTime(slotStart);
                 });
             }
 
@@ -547,10 +565,15 @@
         document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
     }
 
-    async function checkDriveDistance(slotStartDate) {
+    // Google Maps Distance Matrix Service (Client-Side, No CORS Issues)
+    function evaluateDriveTime(slotStartDate) {
         const currentAddr = document.getElementById('address').value.trim();
-        if (!currentAddr) return;
+        if (!currentAddr || !window.google || !google.maps) {
+            hideTravelAlert();
+            return;
+        }
 
+        // Find events on the selected date
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
             return evStart.getFullYear() === slotStartDate.getFullYear() &&
@@ -558,6 +581,7 @@
                    evStart.getDate() === slotStartDate.getDate();
         });
 
+        // Find latest measure ending right before this slot
         let prevEvent = null;
         dayEvents.forEach(ev => {
             const evEnd = new Date(ev.end);
@@ -573,37 +597,43 @@
             return;
         }
 
-        try {
-            const origin = encodeURIComponent(`${prevEvent.location}, WA`);
-            const destination = encodeURIComponent(`${currentAddr}, WA`);
-            const matrixUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&key=${GOOGLE_API_KEY}`;
+        const service = new google.maps.DistanceMatrixService();
+        const originAddr = prevEvent.location.includes("WA") ? prevEvent.location : `${prevEvent.location}, WA`;
+        const destAddr = currentAddr.includes("WA") ? currentAddr : `${currentAddr}, WA`;
 
-            const res = await fetch(matrixUrl);
-            const data = await res.json();
-
-            if (data.status === "OK" && data.rows[0].elements[0].status === "OK") {
-                const durationSec = data.rows[0].elements[0].duration.value;
-                const durationText = data.rows[0].elements[0].duration.text;
+        service.getDistanceMatrix({
+            origins: [originAddr],
+            destinations: [destAddr],
+            travelMode: google.maps.TravelMode.DRIVING,
+            unitSystem: google.maps.UnitSystem.IMPERIAL
+        }, (response, status) => {
+            if (status === "OK" && response.rows[0].elements[0].status === "OK") {
+                const element = response.rows[0].elements[0];
+                const durationSec = element.duration.value;
+                const durationText = element.duration.text;
                 const prevTown = extractTownName(prevEvent.location, prevEvent.summary);
 
-                if (durationSec > 1800) {
+                if (durationSec > 1800) { // If drive exceeds 30 minutes
                     showTravelAlert(
-                        `⚠️ <b>Travel Advisory:</b> ~<b>${durationText}</b> drive from previous measure in <b>${prevTown}</b>. Consider booking a later time slot.`
+                        `⚠️ <b>Travel Warning:</b> Estimated drive time is <b>${durationText}</b> from previous measure in <b>${prevTown}</b>. Consider booking a later slot to allow adequate travel time.`,
+                        "warning"
                     );
                 } else {
                     showTravelAlert(
-                        `🚗 <b>Drive Buffer OK:</b> ~${durationText} drive from previous measure in ${prevTown}.`
+                        `🚗 <b>Drive Buffer OK:</b> ~${durationText} drive from previous measure in ${prevTown}.`,
+                        "ok"
                     );
                 }
+            } else {
+                hideTravelAlert();
             }
-        } catch (e) {
-            console.warn("Could not calculate drive matrix", e);
-        }
+        });
     }
 
-    function showTravelAlert(html) {
+    function showTravelAlert(html, type) {
         const alertBox = document.getElementById('travelAlert');
         alertBox.innerHTML = html;
+        alertBox.className = `travel-alert ${type}`;
         alertBox.style.display = 'block';
     }
 
@@ -627,40 +657,35 @@
             const [year, month, day] = selectedDate.split('-').map(Number);
             const minutes = timeStrToMinutes(selectedTime);
             const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
-            checkDriveDistance(slotStart);
+            evaluateDriveTime(slotStart);
         }
     });
 
-    document.getElementById('checkBtn').addEventListener('click', async () => {
+    document.getElementById('checkBtn').addEventListener('click', () => {
         const addressVal = document.getElementById('address').value;
         const btn = document.getElementById('checkBtn');
         if (!addressVal) return alert("Please enter an address first.");
         
         btn.innerText = "Checking...";
-        try {
-            const fullAddress = `${addressVal}, WA`;
-            const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${GOOGLE_API_KEY}`;
-            const res = await fetch(googleGeoUrl);
-            const data = await res.json();
-            
-            if (data.status === "OK" && data.results.length > 0) {
-                alert(`Found: ${data.results[0].formatted_address}`);
+        const geocoder = new google.maps.Geocoder();
+        const fullAddress = addressVal.includes("WA") ? addressVal : `${addressVal}, WA`;
+
+        geocoder.geocode({ address: fullAddress }, (results, status) => {
+            if (status === "OK" && results[0]) {
+                alert(`Found: ${results[0].formatted_address}`);
                 btn.innerText = "Valid ✓";
                 btn.style.background = "#2e7d32";
                 if (selectedTime && selectedDate) {
                     const [y, m, d] = selectedDate.split('-').map(Number);
                     const min = timeStrToMinutes(selectedTime);
-                    checkDriveDistance(new Date(y, m - 1, d, Math.floor(min / 60), min % 60, 0));
+                    evaluateDriveTime(new Date(y, m - 1, d, Math.floor(min / 60), min % 60, 0));
                 }
             } else {
                 alert("Address not found in Washington. Please double-check spelling.");
                 btn.style.background = "#c62828";
                 btn.innerText = "Check";
             }
-        } catch (err) {
-            alert("Error testing address network.");
-            btn.innerText = "Check";
-        }
+        });
     });
 
     renderDateStrip();
@@ -719,16 +744,19 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
+            // Geocode directly with Google SDK
             let coords = null;
             try {
-                const fullAddress = `${submissionData.address}, WA`;
-                const googleGeoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${GOOGLE_API_KEY}`;
-                const geoRes = await fetch(googleGeoUrl);
-                const geoData = await geoRes.json();
-                if (geoData.status === "OK" && geoData.results.length > 0) {
+                const geocoder = new google.maps.Geocoder();
+                const geoRes = await new Promise((resolve) => {
+                    geocoder.geocode({ address: `${submissionData.address}, WA` }, (results, status) => {
+                        resolve(status === "OK" && results[0] ? results[0] : null);
+                    });
+                });
+                if (geoRes) {
                     coords = {
-                        lat: parseFloat(geoData.results[0].geometry.location.lat),
-                        lon: parseFloat(geoData.results[0].geometry.location.lng)
+                        lat: parseFloat(geoRes.geometry.location.lat()),
+                        lon: parseFloat(geoRes.geometry.location.lng())
                     };
                 }
             } catch (err) {
