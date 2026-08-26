@@ -32,11 +32,11 @@
 
         .booking-card { 
             width: 100%;
-            max-width: 640px; 
+            max-width: 550px; 
             background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
-            padding: 30px; 
+            padding: 24px; 
             border-radius: 12px; 
             border: 1px solid var(--border);
             border-top: 8px solid var(--primary);
@@ -53,11 +53,12 @@
             padding-bottom: 12px; 
             text-align: center; 
             color: var(--primary); 
+            font-size: 1.4em;
         }
 
         .section-label {
             display: block;
-            margin-top: 20px;
+            margin-top: 18px;
             font-weight: 700;
             font-size: 0.8em;
             color: var(--primary-light);
@@ -126,52 +127,66 @@
         }
 
         /* Outlook Date Strip Carousel */
+        .date-strip-wrapper {
+            width: 100%;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
         .date-strip {
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding: 10px 2px;
-            margin-top: 6px;
-            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+            padding: 6px 2px 12px 2px;
+            min-height: 75px;
+            box-sizing: border-box;
         }
 
         .date-pill {
-            flex: 0 0 74px;
-            padding: 10px 4px;
+            flex: 0 0 70px;
+            height: 68px;
+            padding: 8px 4px;
             text-align: center;
-            background: var(--surface);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             user-select: none;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        .date-pill .day-name { font-size: 0.75em; text-transform: uppercase; color: #78909c; font-weight: 700; }
-        .date-pill .day-num { font-size: 1.3em; font-weight: 800; color: var(--primary); margin-top: 2px; }
-        .date-pill .month-name { font-size: 0.7em; color: #546e7a; }
+        .date-pill .day-name { font-size: 0.72em; text-transform: uppercase; color: #78909c; font-weight: 700; }
+        .date-pill .day-num { font-size: 1.25em; font-weight: 800; color: var(--primary); margin: 2px 0; }
+        .date-pill .month-name { font-size: 0.68em; color: #546e7a; }
 
         .date-pill.selected {
-            background: var(--primary);
-            border-color: var(--primary);
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
             box-shadow: 0 4px 10px rgba(62,39,35,0.3);
         }
         .date-pill.selected .day-name, 
         .date-pill.selected .day-num, 
-        .date-pill.selected .month-name { color: #ffffff; }
+        .date-pill.selected .month-name { color: #ffffff !important; }
 
         /* Outlook Slot Grid */
         .time-slots-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 8px;
             background: rgba(255, 255, 255, 0.6);
             padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            max-height: 230px;
+            max-height: 220px;
             overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .slot-btn {
@@ -179,7 +194,7 @@
             border: 1px solid #cfd8dc;
             padding: 8px 4px;
             border-radius: 6px;
-            font-size: 0.85em;
+            font-size: 0.82em;
             font-weight: 600;
             color: #37474f;
             cursor: pointer;
@@ -189,7 +204,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 48px;
+            min-height: 46px;
+            box-sizing: border-box;
         }
 
         .slot-btn:hover:not(.busy) {
@@ -198,24 +214,24 @@
         }
 
         .slot-btn.selected {
-            background: var(--accent);
-            color: #ffffff;
-            border-color: var(--accent);
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            border-color: var(--accent) !important;
             box-shadow: 0 2px 6px rgba(46,125,50,0.3);
         }
-        .slot-btn.selected .slot-loc { color: #e8f5e9; }
+        .slot-btn.selected .slot-loc { color: #e8f5e9 !important; }
 
         .slot-btn.busy {
             background: #eceff1;
             color: #90a4ae;
             border-color: #e0e0e0;
             cursor: not-allowed;
-            opacity: 0.75;
+            opacity: 0.7;
         }
 
         .slot-time { font-size: 0.95em; }
         .slot-loc {
-            font-size: 0.72em;
+            font-size: 0.7em;
             font-weight: 700;
             color: #8d6e63;
             margin-top: 2px;
@@ -228,7 +244,7 @@
         /* Travel Warning Box */
         .travel-alert {
             display: none;
-            margin-top: 12px;
+            margin-top: 10px;
             padding: 10px 14px;
             border-radius: 6px;
             background: var(--warning-bg);
@@ -239,9 +255,9 @@
         }
 
         .radio-group { 
-            margin-top: 18px; 
+            margin-top: 16px; 
             background: rgba(255, 255, 255, 0.6); 
-            padding: 12px 16px; 
+            padding: 12px 14px; 
             border-radius: 6px; 
             border: 1px solid var(--border); 
         }
@@ -254,7 +270,7 @@
             color: white; 
             border: none; 
             padding: 16px; 
-            margin-top: 24px; 
+            margin-top: 20px; 
             border-radius: 6px; 
             font-size: 16px; 
             font-weight: bold; 
@@ -303,17 +319,20 @@
 
         <label class="section-label">Address</label>
         <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address" required onchange="onAddressChanged()">
-            <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
+            <input type="text" name="address" id="address" placeholder="Project Address" required>
+            <button type="button" class="check-btn" id="checkBtn">Test</button>
         </div>
 
         <label class="section-label">What are we measuring?</label>
         <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
 
-        <!-- Outlook Date Carousel -->
+        <!-- 1. Choose Date Carousel -->
         <label class="section-label">1. Choose Date</label>
-        <div class="date-strip" id="dateStrip"></div>
+        <div class="date-strip-wrapper">
+            <div class="date-strip" id="dateStrip"></div>
+        </div>
 
+        <!-- 2. Select Time Slot -->
         <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
         <div class="time-slots-container" id="timeSlotsContainer">
             <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
@@ -406,7 +425,8 @@
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        for (let i = 0; i < 14; i++) {
+        let renderedCount = 0;
+        for (let i = 0; i < 20 && renderedCount < 14; i++) {
             const d = new Date();
             d.setDate(today.getDate() + i);
 
@@ -416,7 +436,7 @@
 
             const pill = document.createElement('div');
             pill.className = 'date-pill';
-            if (i === 0 && !selectedDate) {
+            if (renderedCount === 0 && !selectedDate) {
                 pill.classList.add('selected');
                 selectedDate = dateStr;
                 document.getElementById('selectedDateInput').value = dateStr;
@@ -428,7 +448,7 @@
                 <div class="month-name">${months[d.getMonth()]}</div>
             `;
 
-            pill.onclick = () => {
+            pill.addEventListener('click', () => {
                 document.querySelectorAll('.date-pill').forEach(p => p.classList.remove('selected'));
                 pill.classList.add('selected');
                 selectedDate = dateStr;
@@ -437,9 +457,10 @@
                 document.getElementById('selectedTimeInput').value = '';
                 hideTravelAlert();
                 renderTimeSlots();
-            };
+            });
 
             strip.appendChild(pill);
+            renderedCount++;
         }
     }
 
@@ -482,13 +503,13 @@
                     btn.classList.add('selected');
                 }
 
-                btn.onclick = () => {
+                btn.addEventListener('click', () => {
                     document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
                     selectedTime = timeStr;
                     document.getElementById('selectedTimeInput').value = timeStr;
                     checkDriveDistance(slotStart);
-                };
+                });
             }
 
             container.appendChild(btn);
@@ -518,19 +539,4 @@
             }
         });
 
-        if (!prevEvent || !prevEvent.location || prevEvent.location === "Scheduled Measure") {
-            hideTravelAlert();
-            return;
-        }
-
-        try {
-            const origin = encodeURIComponent(`${prevEvent.location}, WA`);
-            const destination = encodeURIComponent(`${currentAddr}, WA`);
-            const matrixUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&key=${GOOGLE_API_KEY}`;
-
-            const res = await fetch(matrixUrl);
-            const data = await res.json();
-
-            if (data.status === "OK" && data.rows[0].elements[0].status === "OK") {
-                const durationSec = data.rows[0].elements[0].duration.value;
-                const durationText = data.rows[0].elements[0].d
+        if (!prevEvent || !prevEvent.location || prevEvent.location === "Sche
