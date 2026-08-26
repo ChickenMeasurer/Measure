@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule a Measure | Drafting Services</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
+        :root {
+            --primary: #3e2723;
+            --primary-light: #5d4037;
+            --surface: rgba(255, 255, 255, 0.95);
+            --border: #d7ccc8;
+            --text: #263238;
+            --accent: #2e7d32;
+            --warning-bg: #fff3e0;
+            --warning-border: #ffe0b2;
+            --warning-text: #e65100;
+        }
+
         body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: url('backgroundmain.png') no-repeat center center fixed; 
             background-size: cover;
-            padding: 20px; 
-            color: #263238;
+            padding: 20px 10px; 
+            color: var(--text);
             margin: 0;
             display: flex;
             align-items: center;
@@ -19,175 +30,249 @@
             min-height: 100vh;
         }
 
-        .container { 
+        .booking-card { 
             width: 100%;
-            max-width: 500px; 
+            max-width: 640px; 
             background: url('textbackground.jpg'), url('https://www.toptal.com/designers/subtlepatterns/uploads/paper.png');
             background-blend-mode: overlay;
             background-size: cover;
             padding: 30px; 
-            border-radius: 8px; 
-            border: 1px solid #d7ccc8;
-            border-top: 8px solid #3e2723;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            border-top: 8px solid var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+            box-sizing: border-box;
         }
 
-        h2 { margin-top: 0; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #3e2723; padding-bottom: 15px; text-align: center; color: #3e2723; }
-        label { display: block; margin-top: 20px; font-weight: 700; font-size: 0.8em; color: #4e342e; text-transform: uppercase; }
-        
+        h2 { 
+            margin-top: 0; 
+            font-weight: 400; 
+            letter-spacing: 1.5px; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid var(--primary); 
+            padding-bottom: 12px; 
+            text-align: center; 
+            color: var(--primary); 
+        }
+
+        .section-label {
+            display: block;
+            margin-top: 20px;
+            font-weight: 700;
+            font-size: 0.8em;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         input, textarea, select { 
-            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #bcaaa4; 
-            border-radius: 4px; box-sizing: border-box; font-size: 16px; 
-            background: rgba(255, 255, 255, 0.85); 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px; 
+            border: 1px solid #bcaaa4; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+            background: var(--surface); 
         }
 
         .salesperson-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-top: 8px;
+            gap: 8px;
+            margin-top: 6px;
         }
 
-        .salesperson-option {
-            position: relative;
-            text-align: center;
-        }
-
-        .salesperson-option input {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-
+        .salesperson-option { position: relative; }
+        .salesperson-option input { position: absolute; opacity: 0; }
         .salesperson-label {
             display: block;
-            background: rgba(255, 255, 255, 0.7);
+            background: var(--surface);
             border: 1px solid #bcaaa4;
-            padding: 12px 0;
-            border-radius: 4px;
+            padding: 10px 0;
+            border-radius: 6px;
             font-weight: bold;
-            color: #4e342e;
+            color: var(--primary-light);
+            text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.95em;
+            transition: all 0.2s;
         }
 
         .salesperson-option input:checked + .salesperson-label {
-            background: #3e2723;
+            background: var(--primary);
             color: white;
-            border-color: #3e2723;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-color: var(--primary);
         }
 
         .address-group {
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 6px;
         }
-
-        .address-group input {
-            margin-top: 0;
-            flex: 1;
-        }
+        .address-group input { margin-top: 0; flex: 1; }
 
         .check-btn {
-            background: #4e342e;
+            background: var(--primary-light);
             color: white;
             border: none;
-            padding: 12px 8px;
-            border-radius: 4px;
+            padding: 12px 14px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 0.75em;
             font-weight: bold;
             text-transform: uppercase;
-            transition: background 0.3s;
-            width: 60px;
-            white-space: nowrap;
+            width: auto;
         }
 
-        .check-btn:hover {
-            background: #5d4037;
+        /* Outlook Date Strip Carousel */
+        .date-strip {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 2px;
+            margin-top: 6px;
+            scrollbar-width: thin;
         }
 
-        .radio-group { 
-            margin-top: 20px; 
-            background: rgba(255, 255, 255, 0.5); 
-            padding: 15px; 
-            border-radius: 4px; 
-            border: 1px solid #d7ccc8; 
+        .date-pill {
+            flex: 0 0 74px;
+            padding: 10px 4px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
         }
 
-        .time-grid {
+        .date-pill .day-name { font-size: 0.75em; text-transform: uppercase; color: #78909c; font-weight: 700; }
+        .date-pill .day-num { font-size: 1.3em; font-weight: 800; color: var(--primary); margin-top: 2px; }
+        .date-pill .month-name { font-size: 0.7em; color: #546e7a; }
+
+        .date-pill.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px rgba(62,39,35,0.3);
+        }
+        .date-pill.selected .day-name, 
+        .date-pill.selected .day-num, 
+        .date-pill.selected .month-name { color: #ffffff; }
+
+        /* Outlook Slot Grid */
+        .time-slots-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             margin-top: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            max-height: 230px;
+            overflow-y: auto;
         }
 
-        .radio-option { 
-            display: flex; 
-            align-items: center; 
-            margin-bottom: 8px; 
-            cursor: pointer; 
-            font-size: 0.85em; 
-            font-weight: 500; 
-        }
-        .radio-option input { 
-            width: auto; 
-            margin-top: 0; 
-            margin-right: 6px; 
-            height: 16px; 
-            width: 16px; 
-            accent-color: #3e2723; 
+        .slot-btn {
+            background: #ffffff;
+            border: 1px solid #cfd8dc;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #37474f;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 48px;
         }
 
-        /* Dim and strike-through unavailable Outlook slots */
-        .radio-option.slot-busy {
-            opacity: 0.4;
-            text-decoration: line-through;
+        .slot-btn:hover:not(.busy) {
+            border-color: var(--primary);
+            background: #efebe9;
+        }
+
+        .slot-btn.selected {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 2px 6px rgba(46,125,50,0.3);
+        }
+        .slot-btn.selected .slot-loc { color: #e8f5e9; }
+
+        .slot-btn.busy {
+            background: #eceff1;
+            color: #90a4ae;
+            border-color: #e0e0e0;
             cursor: not-allowed;
+            opacity: 0.75;
         }
 
-        .slot-town-badge {
+        .slot-time { font-size: 0.95em; }
+        .slot-loc {
             font-size: 0.72em;
-            font-weight: bold;
+            font-weight: 700;
             color: #8d6e63;
-            margin-left: 4px;
-            text-decoration: none !important;
-            display: inline-block;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
-        /* Driving Advisory Warning Box */
+        /* Travel Warning Box */
         .travel-alert {
             display: none;
             margin-top: 12px;
             padding: 10px 14px;
-            border-radius: 4px;
-            background: #fff3e0;
-            border: 1px solid #ffe0b2;
-            color: #e65100;
+            border-radius: 6px;
+            background: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
             font-size: 0.82em;
             line-height: 1.4;
         }
 
-        button.submit-btn { 
-            width: 100%; background: #3e2723; color: white; border: none; padding: 18px; 
-            margin-top: 30px; border-radius: 4px; font-size: 16px; font-weight: bold; 
-            letter-spacing: 2px; cursor: pointer; text-transform: uppercase; transition: background 0.3s;
+        .radio-group { 
+            margin-top: 18px; 
+            background: rgba(255, 255, 255, 0.6); 
+            padding: 12px 16px; 
+            border-radius: 6px; 
+            border: 1px solid var(--border); 
         }
-        button.submit-btn:hover { background: #5d4037; }
+        .radio-option { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.85em; font-weight: 500; cursor: pointer; }
+        .radio-option input { width: auto; margin: 0 8px 0 0; accent-color: var(--primary); }
+
+        button.submit-btn { 
+            width: 100%; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 16px; 
+            margin-top: 24px; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            letter-spacing: 1.5px; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            transition: background 0.2s;
+        }
+        button.submit-btn:hover { background: var(--primary-light); }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="booking-card">
     <h2>Schedule a Measure</h2>
     <form id="measureForm">
         
-        <label>Salesperson</label>
+        <label class="section-label">Salesperson</label>
         <div class="salesperson-grid">
             <div class="salesperson-option">
                 <input type="radio" name="salesperson" id="sales_as" value="AS" required>
@@ -207,50 +292,41 @@
             </div>
         </div>
         
-        <label>Customer Name</label>
+        <label class="section-label">Customer Name</label>
         <input type="text" name="name" id="name" placeholder="Full Name" required>
 
-        <label>Phone Number</label>
+        <label class="section-label">Phone Number</label>
         <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
 
-        <label>Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+        <label class="section-label">Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
         <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
 
-        <label>Address</label>
+        <label class="section-label">Address</label>
         <div class="address-group">
             <input type="text" name="address" id="address" placeholder="Project Address" required onchange="onAddressChanged()">
             <button type="button" class="check-btn" id="checkBtn" onclick="testAddress()">Test</button>
         </div>
 
-        <label>What are we measuring?</label>
-        <textarea name="details" id="details" rows="3" placeholder="e.g., Kitchen countertops..."></textarea>
+        <label class="section-label">What are we measuring?</label>
+        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
 
-        <label>Days you are available:</label>
-        <input type="text" id="datePicker" name="available_days" placeholder="Tap to select dates" required>
+        <!-- Outlook Date Carousel -->
+        <label class="section-label">1. Choose Date</label>
+        <div class="date-strip" id="dateStrip"></div>
 
-        <label>Preferred Times <span id="calStatus" style="font-weight: normal; font-size: 0.8em; color: #7d635c;">(Select date to filter availability)</span></label>
-        <div class="radio-group time-grid" id="timeGrid">
-            <label class="radio-option"><input type="checkbox" name="time" value="8:30 AM"><span class="lbl-text">8:30 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="9:00 AM"><span class="lbl-text">9:00 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="9:30 AM"><span class="lbl-text">9:30 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="10:00 AM"><span class="lbl-text">10:00 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="10:30 AM"><span class="lbl-text">10:30 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="11:00 AM"><span class="lbl-text">11:00 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="11:30 AM"><span class="lbl-text">11:30 AM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="12:00 PM"><span class="lbl-text">12:00 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="12:30 PM"><span class="lbl-text">12:30 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="1:00 PM"><span class="lbl-text">1:00 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="1:30 PM"><span class="lbl-text">1:30 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="2:00 PM"><span class="lbl-text">2:00 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="2:30 PM"><span class="lbl-text">2:30 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="3:00 PM"><span class="lbl-text">3:00 PM</span></label>
-            <label class="radio-option"><input type="checkbox" name="time" value="3:30 PM"><span class="lbl-text">3:30 PM</span></label>
+        <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
+        <div class="time-slots-container" id="timeSlotsContainer">
+            <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Select a date above to view openings</div>
         </div>
 
+        <!-- Travel Warning Box -->
         <div id="travelAlert" class="travel-alert"></div>
 
+        <input type="hidden" name="available_days" id="selectedDateInput" required>
+        <input type="hidden" name="selected_time" id="selectedTimeInput" required>
+
         <div class="radio-group">
-            <label style="margin-top:0; padding-bottom:10px;">Confirmation Preference</label>
+            <label style="margin-top:0; padding-bottom:8px; font-weight:700; font-size:0.75em; text-transform:uppercase;">Confirmation Preference</label>
             <label class="radio-option">
                 <input type="radio" name="confirmation" value="Text Cell" checked> 
                 This is a cell phone, please text to confirm.
@@ -261,11 +337,10 @@
             </label>
         </div>
 
-        <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Confirm Booking</button>
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -286,7 +361,16 @@
     const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
     const GOOGLE_API_KEY = "AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q";
 
+    const TIME_SLOTS = [
+        "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
+        "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", 
+        "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", 
+        "2:30 PM", "3:00 PM", "3:30 PM"
+    ];
+
     let busySlots = [];
+    let selectedDate = null;
+    let selectedTime = null;
 
     function timeStrToMinutes(timeStr) {
         const [time, modifier] = timeStr.trim().split(' ');
@@ -314,80 +398,108 @@
         return "Booked";
     }
 
-    function updateTimeAvailability(selectedDates) {
-        const statusSpan = document.getElementById('calStatus');
-        const checkboxes = document.querySelectorAll('input[name="time"]');
+    function renderDateStrip() {
+        const strip = document.getElementById('dateStrip');
+        strip.innerHTML = '';
+        const today = new Date();
 
-        if (!selectedDates || selectedDates.length === 0) {
-            checkboxes.forEach(cb => {
-                cb.disabled = false;
-                cb.parentElement.classList.remove('slot-busy');
-                const badge = cb.parentElement.querySelector('.slot-town-badge');
-                if (badge) badge.remove();
-            });
-            statusSpan.innerText = "(Select date to filter availability)";
-            hideTravelAlert();
-            return;
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        for (let i = 0; i < 14; i++) {
+            const d = new Date();
+            d.setDate(today.getDate() + i);
+
+            if (d.getDay() === 0) continue; // Skip Sundays
+
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            const pill = document.createElement('div');
+            pill.className = 'date-pill';
+            if (i === 0 && !selectedDate) {
+                pill.classList.add('selected');
+                selectedDate = dateStr;
+                document.getElementById('selectedDateInput').value = dateStr;
+            }
+
+            pill.innerHTML = `
+                <div class="day-name">${days[d.getDay()]}</div>
+                <div class="day-num">${d.getDate()}</div>
+                <div class="month-name">${months[d.getMonth()]}</div>
+            `;
+
+            pill.onclick = () => {
+                document.querySelectorAll('.date-pill').forEach(p => p.classList.remove('selected'));
+                pill.classList.add('selected');
+                selectedDate = dateStr;
+                document.getElementById('selectedDateInput').value = dateStr;
+                selectedTime = null;
+                document.getElementById('selectedTimeInput').value = '';
+                hideTravelAlert();
+                renderTimeSlots();
+            };
+
+            strip.appendChild(pill);
         }
-
-        statusSpan.innerText = "(Strikethrough = busy on calendar)";
-
-        const BUFFER_MINUTES = 30;
-        const SLOT_DURATION_MINUTES = 30;
-
-        checkboxes.forEach(cb => {
-            const slotMinutes = timeStrToMinutes(cb.value);
-            let conflictingEvent = null;
-
-            for (const dateObj of selectedDates) {
-                const year = dateObj.getFullYear();
-                const month = dateObj.getMonth();
-                const day = dateObj.getDate();
-
-                const slotStart = new Date(year, month, day, Math.floor(slotMinutes / 60), slotMinutes % 60, 0);
-                const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60000);
-
-                conflictingEvent = busySlots.find(busy => {
-                    const bufferedStart = new Date(new Date(busy.start).getTime() - BUFFER_MINUTES * 60000);
-                    const bufferedEnd = new Date(new Date(busy.end).getTime() + BUFFER_MINUTES * 60000);
-                    return slotStart < bufferedEnd && slotEnd > bufferedStart;
-                });
-
-                if (conflictingEvent) break;
-            }
-
-            const existingBadge = cb.parentElement.querySelector('.slot-town-badge');
-            if (existingBadge) existingBadge.remove();
-
-            if (conflictingEvent) {
-                cb.checked = false;
-                cb.disabled = true;
-                cb.parentElement.classList.add('slot-busy');
-                
-                const town = extractTownName(conflictingEvent.location, conflictingEvent.summary);
-                const badge = document.createElement('span');
-                badge.className = 'slot-town-badge';
-                badge.innerText = ` (${town})`;
-                cb.parentElement.appendChild(badge);
-            } else {
-                cb.disabled = false;
-                cb.parentElement.classList.remove('slot-busy');
-            }
-        });
     }
 
-    // Google Distance Matrix Drive Verification
-    async function evaluateDriveBuffer() {
-        const currentAddr = document.getElementById('address').value.trim();
-        const checkedBox = document.querySelector('input[name="time"]:checked');
-        if (!currentAddr || !checkedBox || !picker.selectedDates || picker.selectedDates.length === 0) {
-            hideTravelAlert();
-            return;
-        }
+    function renderTimeSlots() {
+        const container = document.getElementById('timeSlotsContainer');
+        container.innerHTML = '';
+        if (!selectedDate) return;
 
-        const dateObj = picker.selectedDates[0];
-        const minutes = timeStrToMinutes(checkedBox.value);
-        const slotStartDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), Math.floor(minutes / 60), minutes % 60, 0);
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const BUFFER_MS = 30 * 60 * 1000;
+        const SLOT_MS = 30 * 60 * 1000;
+
+        let availableCount = 0;
+
+        TIME_SLOTS.forEach(timeStr => {
+            const minutes = timeStrToMinutes(timeStr);
+            const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
+            const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
+
+            const conflictingEvent = busySlots.find(busy => {
+                const bStart = new Date(new Date(busy.start).getTime() - BUFFER_MS);
+                const bEnd = new Date(new Date(busy.end).getTime() + BUFFER_MS);
+                return slotStart < bEnd && slotEnd > bStart;
+            });
+
+            const btn = document.createElement('div');
+            btn.className = `slot-btn ${conflictingEvent ? 'busy' : ''}`;
+
+            if (conflictingEvent) {
+                const town = extractTownName(conflictingEvent.location, conflictingEvent.summary);
+                btn.innerHTML = `
+                    <span class="slot-time">${timeStr}</span>
+                    <span class="slot-loc">📍 ${town}</span>
+                `;
+            } else {
+                availableCount++;
+                btn.innerHTML = `<span class="slot-time">${timeStr}</span>`;
+                
+                if (selectedTime === timeStr) {
+                    btn.classList.add('selected');
+                }
+
+                btn.onclick = () => {
+                    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedTime = timeStr;
+                    document.getElementById('selectedTimeInput').value = timeStr;
+                    checkDriveDistance(slotStart);
+                };
+            }
+
+            container.appendChild(btn);
+        });
+
+        document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
+    }
+
+    async function checkDriveDistance(slotStartDate) {
+        const currentAddr = document.getElementById('address').value.trim();
+        if (!currentAddr) return;
 
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
@@ -421,73 +533,4 @@
 
             if (data.status === "OK" && data.rows[0].elements[0].status === "OK") {
                 const durationSec = data.rows[0].elements[0].duration.value;
-                const durationText = data.rows[0].elements[0].duration.text;
-                const prevTown = extractTownName(prevEvent.location, prevEvent.summary);
-
-                if (durationSec > 1800) {
-                    showTravelAlert(
-                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive from previous measure in <b>${prevTown}</b>. Consider booking a later time.`
-                    );
-                } else {
-                    showTravelAlert(
-                        `🚗 <b>Buffer OK:</b> ~${durationText} drive from previous measure in ${prevTown}.`
-                    );
-                }
-            }
-        } catch (e) {
-            console.warn("Could not calculate drive matrix", e);
-        }
-    }
-
-    function showTravelAlert(html) {
-        const alertBox = document.getElementById('travelAlert');
-        alertBox.innerHTML = html;
-        alertBox.style.display = 'block';
-    }
-
-    function hideTravelAlert() {
-        const alertBox = document.getElementById('travelAlert');
-        alertBox.style.display = 'none';
-        alertBox.innerHTML = '';
-    }
-
-    window.onAddressChanged = function() {
-        evaluateDriveBuffer();
-    };
-
-    document.querySelectorAll('input[name="time"]').forEach(cb => {
-        cb.addEventListener('change', () => {
-            evaluateDriveBuffer();
-        });
-    });
-
-    const picker = flatpickr("#datePicker", {
-        mode: "multiple",
-        dateFormat: "Y-m-d",
-        minDate: "today",
-        altInput: true,
-        altFormat: "F j, Y",
-        conjunction: ", ",
-        onChange: function(selectedDates) {
-            updateTimeAvailability(selectedDates);
-            evaluateDriveBuffer();
-        }
-    });
-
-    async function initCalendarSync() {
-        try {
-            const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
-            if (res.ok) {
-                const data = await res.json();
-                busySlots = data.busySlots || [];
-                if (picker.selectedDates.length > 0) {
-                    updateTimeAvailability(picker.selectedDates);
-                }
-            }
-        } catch (e) {
-            console.warn("Could not load Outlook availability, all slots remain open.", e);
-        }
-    }
-    initCalendarSync();
-
-    const form = document.getElementById('measureFor
+                const durationText = data.rows[0].elements[0].d
