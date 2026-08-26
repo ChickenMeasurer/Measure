@@ -13,11 +13,11 @@
             --text: #263238;
             --accent: #2e7d32;
             --warning-bg: #fff3e0;
-            --warning-border: #ffe0b2;
-            --warning-text: #e65100;
+            --warning-border: #ffb74d;
+            --warning-text: #bf360c;
             --success-bg: #e8f5e9;
-            --success-border: #c8e6c9;
-            --success-text: #2e7d32;
+            --success-border: #a5d6a7;
+            --success-text: #1b5e20;
         }
 
         body { 
@@ -244,20 +244,27 @@
             max-width: 100%;
         }
 
-        /* Travel Warning Box */
+        /* Travel Advisory Warning Box */
         .travel-alert {
             display: none;
-            margin-top: 10px;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-size: 0.84em;
-            line-height: 1.4;
-            transition: all 0.2s ease;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            line-height: 1.45;
+            font-weight: 500;
+            box-sizing: border-box;
+            animation: popIn 0.2s ease-out;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.98); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .travel-alert.warning {
             background: var(--warning-bg);
-            border: 1px solid var(--warning-border);
+            border: 2px solid var(--warning-border);
             color: var(--warning-text);
         }
 
@@ -334,7 +341,7 @@
 
         <label class="section-label">Address</label>
         <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address (e.g., 4410 6th Ave SE, Lacey)" required>
+            <input type="text" name="address" id="address" placeholder="Project Address (e.g., 442 E Clay Rd, Shelton WA)" required>
             <button type="button" class="check-btn" id="checkBtn">Test</button>
         </div>
 
@@ -451,10 +458,18 @@
         if (target.includes("rochester")) return "Rochester";
         if (target.includes("chehalis") || target.includes("centralia")) return "Centralia";
         
-        if (locationStr && locationStr.includes(",")) {
+        if (locationStr && locationStr.length > 3) {
             return locationStr.split(",")[0].trim();
         }
-        return "Booked";
+        return "Measure";
+    }
+
+    function formatCleanAddress(addr) {
+        let clean = addr.trim();
+        if (!clean.toLowerCase().includes(" wa") && !clean.toLowerCase().includes("washington")) {
+            clean += ", WA";
+        }
+        return clean;
     }
 
     function renderDateStrip() {
@@ -563,7 +578,7 @@
         document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
     }
 
-    // Google Maps Distance Matrix Drive Calculation
+    // Google Maps Driving Route Calculation
     function triggerDriveCheck() {
         const addressInput = document.getElementById('address');
         const currentAddr = addressInput ? addressInput.value.trim() : '';
@@ -578,7 +593,7 @@
         const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
         const slotEnd = new Date(slotStart.getTime() + getSelectedDurationMinutes() * 60 * 1000);
 
-        // Filter events on this day
+        // Find calendar events on this day
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
             return evStart.getFullYear() === slotStart.getFullYear() &&
@@ -618,31 +633,30 @@
             });
         }
 
-        if (!referenceEvent || !referenceEvent.location || referenceEvent.location === "Scheduled Measure") {
+        if (!referenceEvent || !referenceEvent.location || referenceEvent.location === "Scheduled Measure" || referenceEvent.location === "Booked") {
             hideTravelAlert();
             return;
         }
 
-        const service = new google.maps.DistanceMatrixService();
-        const originAddr = referenceEvent.location.includes("WA") ? referenceEvent.location : `${referenceEvent.location}, WA`;
-        const destAddr = currentAddr.includes("WA") ? currentAddr : `${currentAddr}, WA`;
+        const originAddr = formatCleanAddress(referenceEvent.location);
+        const destAddr = formatCleanAddress(currentAddr);
 
-        service.getDistanceMatrix({
-            origins: [originAddr],
-            destinations: [destAddr],
-            travelMode: google.maps.TravelMode.DRIVING,
-            unitSystem: google.maps.UnitSystem.IMPERIAL
-        }, (response, status) => {
-            if (status === "OK" && response.rows[0].elements[0].status === "OK") {
-                const element = response.rows[0].elements[0];
-                const durationSec = element.duration.value;
-                const durationText = element.duration.text;
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route({
+            origin: originAddr,
+            destination: destAddr,
+            travelMode: google.maps.TravelMode.DRIVING
+        }, (result, status) => {
+            if (status === "OK" && result.routes[0] && result.routes[0].legs[0]) {
+                const leg = result.routes[0].legs[0];
+                const durationSec = leg.duration.value;
+                const durationText = leg.duration.text;
                 const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
                 const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
 
-                if (durationSec > 1800) { // Drive time exceeds 30 minutes
+                if (durationSec > 1800) { // Drive time > 30 minutes
                     showTravelAlert(
-                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive ${relationText} <b>${refTown}</b>. Consider picking a later slot to allow enough driving buffer.`,
+                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive ${relationText} <b>${refTown}</b>. Consider booking a later slot to allow adequate travel time.`,
                         "warning"
                     );
                 } else {
@@ -652,6 +666,7 @@
                     );
                 }
             } else {
+                console.warn("Directions request returned status:", status);
                 hideTravelAlert();
             }
         });
@@ -680,7 +695,11 @@
     });
 
     document.getElementById('address').addEventListener('input', () => {
-        triggerDriveCheck();
+        if (selectedTime) triggerDriveCheck();
+    });
+
+    document.getElementById('address').addEventListener('change', () => {
+        if (selectedTime) triggerDriveCheck();
     });
 
     document.getElementById('checkBtn').addEventListener('click', () => {
@@ -690,7 +709,7 @@
         
         btn.innerText = "Checking...";
         const geocoder = new google.maps.Geocoder();
-        const fullAddress = addressVal.includes("WA") ? addressVal : `${addressVal}, WA`;
+        const fullAddress = formatCleanAddress(addressVal);
 
         geocoder.geocode({ address: fullAddress }, (results, status) => {
             if (status === "OK" && results[0]) {
@@ -766,7 +785,7 @@
             try {
                 const geocoder = new google.maps.Geocoder();
                 const geoRes = await new Promise((resolve) => {
-                    geocoder.geocode({ address: `${submissionData.address}, WA` }, (results, status) => {
+                    geocoder.geocode({ address: formatCleanAddress(submissionData.address) }, (results, status) => {
                         resolve(status === "OK" && results[0] ? results[0] : null);
                     });
                 });
