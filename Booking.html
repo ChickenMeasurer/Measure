@@ -295,7 +295,6 @@
         button.submit-btn:hover { background: var(--primary-light); }
     </style>
 
-    <!-- Load Google Maps JavaScript API with Geometry library for client-side drive calculations -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 </head>
 <body>
@@ -471,7 +470,7 @@
             const d = new Date();
             d.setDate(today.getDate() + i);
 
-            if (d.getDay() === 0) continue; // Skip Sundays
+            if (d.getDay() === 0) continue;
 
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -522,7 +521,6 @@
             const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
             const slotEnd = new Date(slotStart.getTime() + DURATION_MS);
 
-            // Cutoff if slot runs past 4:30 PM
             if (minutes + durationMinutes > (16 * 60 + 30)) {
                 return;
             }
@@ -555,7 +553,7 @@
                     btn.classList.add('selected');
                     selectedTime = timeStr;
                     document.getElementById('selectedTimeInput').value = timeStr;
-                    evaluateDriveTime(slotStart);
+                    triggerDriveCheck();
                 });
             }
 
@@ -565,40 +563,68 @@
         document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
     }
 
-    // Google Maps Distance Matrix Service (Client-Side, No CORS Issues)
-    function evaluateDriveTime(slotStartDate) {
-        const currentAddr = document.getElementById('address').value.trim();
-        if (!currentAddr || !window.google || !google.maps) {
+    // Google Maps Distance Matrix Drive Calculation
+    function triggerDriveCheck() {
+        const addressInput = document.getElementById('address');
+        const currentAddr = addressInput ? addressInput.value.trim() : '';
+
+        if (!currentAddr || !selectedTime || !selectedDate || !window.google || !google.maps) {
             hideTravelAlert();
             return;
         }
 
-        // Find events on the selected date
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const minutes = timeStrToMinutes(selectedTime);
+        const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
+        const slotEnd = new Date(slotStart.getTime() + getSelectedDurationMinutes() * 60 * 1000);
+
+        // Filter events on this day
         const dayEvents = busySlots.filter(ev => {
             const evStart = new Date(ev.start);
-            return evStart.getFullYear() === slotStartDate.getFullYear() &&
-                   evStart.getMonth() === slotStartDate.getMonth() &&
-                   evStart.getDate() === slotStartDate.getDate();
+            return evStart.getFullYear() === slotStart.getFullYear() &&
+                   evStart.getMonth() === slotStart.getMonth() &&
+                   evStart.getDate() === slotStart.getDate();
         });
 
-        // Find latest measure ending right before this slot
-        let prevEvent = null;
+        if (dayEvents.length === 0) {
+            hideTravelAlert();
+            return;
+        }
+
+        // 1. Check for measure right before this slot
+        let referenceEvent = null;
+        let isPreceding = true;
+
         dayEvents.forEach(ev => {
             const evEnd = new Date(ev.end);
-            if (evEnd <= slotStartDate) {
-                if (!prevEvent || new Date(ev.end) > new Date(prevEvent.end)) {
-                    prevEvent = ev;
+            if (evEnd <= slotStart) {
+                if (!referenceEvent || evEnd > new Date(referenceEvent.end)) {
+                    referenceEvent = ev;
+                    isPreceding = true;
                 }
             }
         });
 
-        if (!prevEvent || !prevEvent.location || prevEvent.location === "Scheduled Measure") {
+        // 2. If no previous measure, check for measure right after this slot
+        if (!referenceEvent) {
+            dayEvents.forEach(ev => {
+                const evStart = new Date(ev.start);
+                if (evStart >= slotEnd) {
+                    if (!referenceEvent || evStart < new Date(referenceEvent.start)) {
+                        referenceEvent = ev;
+                        isPreceding = false;
+                    }
+                }
+            });
+        }
+
+        if (!referenceEvent || !referenceEvent.location || referenceEvent.location === "Scheduled Measure") {
             hideTravelAlert();
             return;
         }
 
         const service = new google.maps.DistanceMatrixService();
-        const originAddr = prevEvent.location.includes("WA") ? prevEvent.location : `${prevEvent.location}, WA`;
+        const originAddr = referenceEvent.location.includes("WA") ? referenceEvent.location : `${referenceEvent.location}, WA`;
         const destAddr = currentAddr.includes("WA") ? currentAddr : `${currentAddr}, WA`;
 
         service.getDistanceMatrix({
@@ -611,16 +637,17 @@
                 const element = response.rows[0].elements[0];
                 const durationSec = element.duration.value;
                 const durationText = element.duration.text;
-                const prevTown = extractTownName(prevEvent.location, prevEvent.summary);
+                const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
+                const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
 
-                if (durationSec > 1800) { // If drive exceeds 30 minutes
+                if (durationSec > 1800) { // Drive time exceeds 30 minutes
                     showTravelAlert(
-                        `⚠️ <b>Travel Warning:</b> Estimated drive time is <b>${durationText}</b> from previous measure in <b>${prevTown}</b>. Consider booking a later slot to allow adequate travel time.`,
+                        `⚠️ <b>Travel Warning:</b> ~<b>${durationText}</b> drive ${relationText} <b>${refTown}</b>. Consider picking a later slot to allow enough driving buffer.`,
                         "warning"
                     );
                 } else {
                     showTravelAlert(
-                        `🚗 <b>Drive Buffer OK:</b> ~${durationText} drive from previous measure in ${prevTown}.`,
+                        `🚗 <b>Drive Buffer OK:</b> ~${durationText} drive ${relationText} ${refTown}.`,
                         "ok"
                     );
                 }
@@ -639,8 +666,8 @@
 
     function hideTravelAlert() {
         const alertBox = document.getElementById('travelAlert');
-        alertBox.style.display = 'none';
         alertBox.innerHTML = '';
+        alertBox.style.display = 'none';
     }
 
     document.querySelectorAll('input[name="duration_minutes"]').forEach(radio => {
@@ -652,13 +679,8 @@
         });
     });
 
-    document.getElementById('address').addEventListener('change', () => {
-        if (selectedTime && selectedDate) {
-            const [year, month, day] = selectedDate.split('-').map(Number);
-            const minutes = timeStrToMinutes(selectedTime);
-            const slotStart = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
-            evaluateDriveTime(slotStart);
-        }
+    document.getElementById('address').addEventListener('input', () => {
+        triggerDriveCheck();
     });
 
     document.getElementById('checkBtn').addEventListener('click', () => {
@@ -675,11 +697,7 @@
                 alert(`Found: ${results[0].formatted_address}`);
                 btn.innerText = "Valid ✓";
                 btn.style.background = "#2e7d32";
-                if (selectedTime && selectedDate) {
-                    const [y, m, d] = selectedDate.split('-').map(Number);
-                    const min = timeStrToMinutes(selectedTime);
-                    evaluateDriveTime(new Date(y, m - 1, d, Math.floor(min / 60), min % 60, 0));
-                }
+                triggerDriveCheck();
             } else {
                 alert("Address not found in Washington. Please double-check spelling.");
                 btn.style.background = "#c62828";
@@ -744,7 +762,6 @@
             const cleanPhone = submissionData.phone.replace(/\D/g, '');
             const customID = `${cleanName}_${cleanPhone}`;
 
-            // Geocode directly with Google SDK
             let coords = null;
             try {
                 const geocoder = new google.maps.Geocoder();
