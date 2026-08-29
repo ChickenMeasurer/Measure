@@ -191,6 +191,41 @@
             max-height: 230px;
             overflow-y: auto;
             box-sizing: border-box;
+            min-height: 150px;
+        }
+
+        /* Animated Loading State Styles */
+        .loading-overlay {
+            grid-column: span 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+            text-align: center;
+        }
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 4px solid rgba(62, 39, 35, 0.15);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #546e7a;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         .slot-btn {
@@ -333,7 +368,6 @@
 
         /* ---------------------------------------------------
            DESKTOP TWO-COLUMN LAYOUT
-           Automatically activates on screens wider than 850px 
         --------------------------------------------------- */
         .form-columns {
             display: flex;
@@ -343,14 +377,13 @@
 
         @media (min-width: 850px) {
             .booking-card {
-                max-width: 1150px; /* Expanded from 950px for widescreen monitors */
+                max-width: 1150px;
             }
             .form-columns {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 48px; /* Increased gap to give columns more breathing room */
+                gap: 48px; 
             }
-            /* Align the top labels in both columns perfectly */
             .col-left .section-label:first-child,
             .col-right .section-label:first-child {
                 margin-top: 8px;
@@ -438,12 +471,12 @@
                 </div>
 
                 <!-- 2. Select Time Slot -->
-                <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;">⏳ Checking calendar...</span></label>
+                <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;"></span></label>
                 <div class="time-slots-container" id="timeSlotsContainer">
-                    <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Loading calendar availability...</div>
+                    <!-- Loading state now handled dynamically via JS -->
                 </div>
 
-                <!-- Real-Time Drive Distance Alert Box with Dismiss Button -->
+                <!-- Real-Time Drive Distance Alert Box -->
                 <div id="travelAlert" class="travel-alert"></div>
 
                 <div class="radio-group">
@@ -497,6 +530,7 @@
     let busySlots = [];
     let selectedDate = null;
     let selectedTime = null;
+    let isCalendarLoaded = false; // Prevents premature rendering
     const geoCache = {};
 
     function getSelectedDurationMinutes() {
@@ -628,7 +662,21 @@
 
     function renderTimeSlots() {
         const container = document.getElementById('timeSlotsContainer');
+        const slotStatus = document.getElementById('slotStatus');
         container.innerHTML = '';
+        
+        // Show loading spinner if calendar data hasn't arrived yet
+        if (!isCalendarLoaded) {
+            container.innerHTML = `
+                <div class="loading-overlay">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Syncing live availability...<br><span style="font-size: 0.85em; font-weight: normal; color: #78909c;">This may take a few seconds</span></div>
+                </div>
+            `;
+            if (slotStatus) slotStatus.innerText = `⏳ Syncing...`;
+            return;
+        }
+
         if (!selectedDate) return;
 
         const [year, month, day] = selectedDate.split('-').map(Number);
@@ -697,7 +745,7 @@
             container.appendChild(btn);
         });
 
-        document.getElementById('slotStatus').innerText = `(${availableCount} available)`;
+        if (slotStatus) slotStatus.innerText = `(${availableCount} available)`;
     }
 
     async function triggerDriveCheck() {
@@ -818,7 +866,16 @@
         });
     });
 
+    document.getElementById('phone').addEventListener('input', function (e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+        e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+    });
+
     document.getElementById('address').addEventListener('input', () => {
+        const btn = document.getElementById('checkBtn');
+        btn.innerText = "Test";
+        btn.style.background = "var(--primary-light)";
+        
         if (selectedTime) triggerDriveCheck();
         else hideTravelAlert();
     });
@@ -848,18 +905,21 @@
         }
     });
 
+    // 1. Initial UI setup
     renderDateStrip();
+    
+    // 2. Render immediately (this will show the loading spinner because isCalendarLoaded is false)
     renderTimeSlots();
 
+    // 3. Fetch from Microsoft
     async function initCalendarSync(retryCount = 0) {
-        const slotStatus = document.getElementById('slotStatus');
         try {
             const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
-                if (slotStatus) slotStatus.innerText = "";
-                renderTimeSlots();
+                isCalendarLoaded = true; // Unlock the UI
+                renderTimeSlots(); // Draw the real slots
             } else if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             }
@@ -868,6 +928,8 @@
             if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             } else {
+                isCalendarLoaded = true; // Unlock the UI even if it fails so they aren't stuck
+                const slotStatus = document.getElementById('slotStatus');
                 if (slotStatus) slotStatus.innerText = "(Live sync unavailable - check Outlook)";
                 renderTimeSlots();
             }
