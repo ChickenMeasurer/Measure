@@ -681,31 +681,49 @@
             return;
         }
 
-        let referenceEvent = null;
-        let isPreceding = true;
+        // Find the closest preceding and succeeding events
+        let prevEvent = null;
+        let nextEvent = null;
 
         dayEvents.forEach(ev => {
+            const evStart = new Date(ev.start);
             const evEnd = new Date(ev.end);
+
             if (evEnd <= slotStart) {
-                if (!referenceEvent || evEnd > new Date(referenceEvent.end)) {
-                    referenceEvent = ev;
-                    isPreceding = true;
+                if (!prevEvent || evEnd > new Date(prevEvent.end)) {
+                    prevEvent = ev;
+                }
+            } else if (evStart >= slotEnd) {
+                if (!nextEvent || evStart < new Date(nextEvent.start)) {
+                    nextEvent = ev;
                 }
             }
         });
 
-        if (!referenceEvent) {
-            dayEvents.forEach(ev => {
-                const evStart = new Date(ev.start);
-                if (evStart >= slotEnd) {
-                    if (!referenceEvent || evStart < new Date(referenceEvent.start)) {
-                        referenceEvent = ev;
-                        isPreceding = false;
-                    }
-                }
-            });
+        // Determine which event is immediately adjacent (within 90 mins)
+        let referenceEvent = null;
+        let isPreceding = true;
+        let availableGapMinutes = 999;
+
+        if (prevEvent) {
+            const gap = (slotStart.getTime() - new Date(prevEvent.end).getTime()) / (60 * 1000);
+            if (gap <= 90) { // Only worry if scheduled closely after previous measure
+                referenceEvent = prevEvent;
+                isPreceding = true;
+                availableGapMinutes = gap;
+            }
         }
 
+        if (!referenceEvent && nextEvent) {
+            const gap = (new Date(nextEvent.start).getTime() - slotEnd.getTime()) / (60 * 1000);
+            if (gap <= 90) { // Only worry if scheduled closely before next measure
+                referenceEvent = nextEvent;
+                isPreceding = false;
+                availableGapMinutes = gap;
+            }
+        }
+
+        // If the appointment is hours away from any other event, unlock immediately
         if (!referenceEvent || !referenceEvent.location || referenceEvent.location === "Scheduled Measure" || referenceEvent.location === "Booked") {
             hideTravelAlert();
             return;
@@ -719,10 +737,11 @@
             const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
             const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
 
-            if (drive.minutes > 30) {
+            // Lock ONLY if the drive time is greater than the available window between measures
+            if (drive.minutes > availableGapMinutes) {
                 isDriveBlocked = true;
                 showTravelAlert(
-                    `⛔ <b>Route Blocked:</b> Estimated drive time is <b>${drive.minutes} mins</b> (${drive.miles} mi) ${relationText} <b>${refTown}</b>. Please choose a later slot to allow adequate drive time.`,
+                    `⛔ <b>Route Blocked:</b> ~<b>${drive.minutes} mins</b> drive needed (${drive.miles} mi) ${relationText} <b>${refTown}</b>, but you only have <b>${Math.round(availableGapMinutes)} mins</b>. Please pick a later slot.`,
                     "warning"
                 );
                 if (submitBtn) {
