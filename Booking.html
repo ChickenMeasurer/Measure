@@ -802,16 +802,25 @@
     renderDateStrip();
     renderTimeSlots();
 
-    async function initCalendarSync() {
+    async function initCalendarSync(retryCount = 0) {
+        const slotStatus = document.getElementById('slotStatus');
         try {
             const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
                 renderTimeSlots();
+            } else if (retryCount < 2) {
+                setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             }
         } catch (e) {
-            console.warn("Could not load calendar availability", e);
+            console.warn("Calendar fetch retry...", e);
+            if (retryCount < 2) {
+                setTimeout(() => initCalendarSync(retryCount + 1), 2000);
+            } else {
+                if (slotStatus) slotStatus.innerText = "(Live sync unavailable - check Outlook)";
+                renderTimeSlots();
+            }
         }
     }
     initCalendarSync();
