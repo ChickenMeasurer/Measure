@@ -12,9 +12,9 @@
             --border: #d7ccc8;
             --text: #263238;
             --accent: #2e7d32;
-            --warning-bg: #fff3e0;
-            --warning-border: #ffb74d;
-            --warning-text: #bf360c;
+            --warning-bg: #ffebee;
+            --warning-border: #ef5350;
+            --warning-text: #c62828;
             --success-bg: #e8f5e9;
             --success-border: #a5d6a7;
             --success-text: #1b5e20;
@@ -44,6 +44,7 @@
             border-top: 8px solid var(--primary);
             box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
             box-sizing: border-box;
+            transition: max-width 0.3s ease;
         }
 
         h2 { 
@@ -314,20 +315,46 @@
             color: white; 
             border: none; 
             padding: 16px; 
-            margin-top: 20px; 
+            margin-top: 24px; 
             border-radius: 6px; 
             font-size: 16px; 
             font-weight: bold; 
             letter-spacing: 1.5px; 
             cursor: pointer; 
             text-transform: uppercase; 
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
         button.submit-btn:hover:not(:disabled) { background: var(--primary-light); }
         button.submit-btn:disabled {
             background: #9e9e9e;
             cursor: not-allowed;
             opacity: 0.85;
+        }
+
+        /* ---------------------------------------------------
+           DESKTOP TWO-COLUMN LAYOUT
+           Automatically activates on screens wider than 850px 
+        --------------------------------------------------- */
+        .form-columns {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        @media (min-width: 850px) {
+            .booking-card {
+                max-width: 950px; /* Expand card for desktop */
+            }
+            .form-columns {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 32px;
+            }
+            /* Align the top labels in both columns perfectly */
+            .col-left .section-label:first-child,
+            .col-right .section-label:first-child {
+                margin-top: 8px;
+            }
         }
     </style>
 
@@ -339,95 +366,104 @@
     <h2>Schedule a Measure</h2>
     <form id="measureForm">
         
-        <label class="section-label">Salesperson</label>
-        <div class="segmented-grid">
-            <div class="segmented-option">
-                <input type="radio" name="salesperson" id="sales_as" value="AS" required>
-                <label for="sales_as" class="segmented-label">AS</label>
+        <div class="form-columns">
+            <!-- LEFT COLUMN: Customer Info -->
+            <div class="col-left">
+                <label class="section-label">Salesperson</label>
+                <div class="segmented-grid">
+                    <div class="segmented-option">
+                        <input type="radio" name="salesperson" id="sales_as" value="AS" required>
+                        <label for="sales_as" class="segmented-label">AS</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="salesperson" id="sales_bc" value="BC">
+                        <label for="sales_bc" class="segmented-label">BC</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="salesperson" id="sales_cl" value="CL">
+                        <label for="sales_cl" class="segmented-label">CL</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="salesperson" id="sales_df" value="DF">
+                        <label for="sales_df" class="segmented-label">DF</label>
+                    </div>
+                </div>
+                
+                <label class="section-label">Customer Name</label>
+                <input type="text" name="name" id="name" placeholder="Full Name" required>
+
+                <label class="section-label">Phone Number</label>
+                <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
+
+                <label class="section-label">Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
+                <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
+
+                <label class="section-label">Address</label>
+                <div class="address-group">
+                    <input type="text" name="address" id="address" placeholder="Project Address (e.g., 442 E Clay Rd, Shelton WA)" required>
+                    <button type="button" class="check-btn" id="checkBtn">Test</button>
+                </div>
+
+                <label class="section-label">What are we measuring?</label>
+                <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
             </div>
-            <div class="segmented-option">
-                <input type="radio" name="salesperson" id="sales_bc" value="BC">
-                <label for="sales_bc" class="segmented-label">BC</label>
-            </div>
-            <div class="segmented-option">
-                <input type="radio" name="salesperson" id="sales_cl" value="CL">
-                <label for="sales_cl" class="segmented-label">CL</label>
-            </div>
-            <div class="segmented-option">
-                <input type="radio" name="salesperson" id="sales_df" value="DF">
-                <label for="sales_df" class="segmented-label">DF</label>
+
+            <!-- RIGHT COLUMN: Scheduling -->
+            <div class="col-right">
+                <!-- Estimated Duration Selector -->
+                <label class="section-label">Estimated Measure Duration</label>
+                <div class="segmented-grid">
+                    <div class="segmented-option">
+                        <input type="radio" name="duration_minutes" id="dur_30" value="30">
+                        <label for="dur_30" class="segmented-label">30 Min</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="duration_minutes" id="dur_60" value="60" checked>
+                        <label for="dur_60" class="segmented-label">1 Hour</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="duration_minutes" id="dur_90" value="90">
+                        <label for="dur_90" class="segmented-label">1.5 Hours</label>
+                    </div>
+                    <div class="segmented-option">
+                        <input type="radio" name="duration_minutes" id="dur_120" value="120">
+                        <label for="dur_120" class="segmented-label">2 Hours</label>
+                    </div>
+                </div>
+
+                <!-- 1. Choose Date Carousel -->
+                <label class="section-label">1. Choose Date</label>
+                <div class="date-strip-wrapper">
+                    <div class="date-strip" id="dateStrip"></div>
+                </div>
+
+                <!-- 2. Select Time Slot -->
+                <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;">⏳ Checking calendar...</span></label>
+                <div class="time-slots-container" id="timeSlotsContainer">
+                    <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Loading calendar availability...</div>
+                </div>
+
+                <!-- Real-Time Drive Distance Alert Box with Dismiss Button -->
+                <div id="travelAlert" class="travel-alert"></div>
+
+                <div class="radio-group">
+                    <label style="margin-top:0; padding-bottom:8px; font-weight:700; font-size:0.75em; text-transform:uppercase;">Confirmation Preference</label>
+                    <label class="radio-option">
+                        <input type="radio" name="confirmation" value="Text Cell" checked> 
+                        This is a cell phone, please text to confirm.
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="confirmation" value="Phone Call"> 
+                        I would prefer a phone call to confirm.
+                    </label>
+                </div>
             </div>
         </div>
-        
-        <label class="section-label">Customer Name</label>
-        <input type="text" name="name" id="name" placeholder="Full Name" required>
-
-        <label class="section-label">Phone Number</label>
-        <input type="tel" name="phone" id="phone" placeholder="(555) 555-5555" required>
-
-        <label class="section-label">Estimate Number (ES) <span style="font-weight: normal; font-size: 0.9em; color: #7d635c;">- Optional</span></label>
-        <input type="text" name="estimate_number" id="estimate_number" placeholder="e.g., ES12345">
-
-        <label class="section-label">Address</label>
-        <div class="address-group">
-            <input type="text" name="address" id="address" placeholder="Project Address (e.g., 442 E Clay Rd, Shelton WA)" required>
-            <button type="button" class="check-btn" id="checkBtn">Test</button>
-        </div>
-
-        <label class="section-label">What are we measuring?</label>
-        <textarea name="details" id="details" rows="2" placeholder="e.g., Kitchen & Bath LVP..."></textarea>
-
-        <!-- Estimated Duration Selector -->
-        <label class="section-label">Estimated Measure Duration</label>
-        <div class="segmented-grid">
-            <div class="segmented-option">
-                <input type="radio" name="duration_minutes" id="dur_30" value="30">
-                <label for="dur_30" class="segmented-label">30 Min</label>
-            </div>
-            <div class="segmented-option">
-                <input type="radio" name="duration_minutes" id="dur_60" value="60" checked>
-                <label for="dur_60" class="segmented-label">1 Hour</label>
-            </div>
-            <div class="segmented-option">
-                <input type="radio" name="duration_minutes" id="dur_90" value="90">
-                <label for="dur_90" class="segmented-label">1.5 Hours</label>
-            </div>
-            <div class="segmented-option">
-                <input type="radio" name="duration_minutes" id="dur_120" value="120">
-                <label for="dur_120" class="segmented-label">2 Hours</label>
-            </div>
-        </div>
-
-        <!-- 1. Choose Date Carousel -->
-        <label class="section-label">1. Choose Date</label>
-        <div class="date-strip-wrapper">
-            <div class="date-strip" id="dateStrip"></div>
-        </div>
-
-        <!-- 2. Select Time Slot -->
-        <label class="section-label">2. Select Time Slot <span id="slotStatus" style="font-weight:normal; text-transform:none; color:#78909c;">⏳ Checking calendar...</span></label>
-        <div class="time-slots-container" id="timeSlotsContainer">
-            <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Loading calendar availability...</div>
-        </div>
-
-        <!-- Real-Time Drive Distance Alert Box with Dismiss Button -->
-        <div id="travelAlert" class="travel-alert"></div>
 
         <input type="hidden" name="available_days" id="selectedDateInput" required>
         <input type="hidden" name="selected_time" id="selectedTimeInput" required>
 
-        <div class="radio-group">
-            <label style="margin-top:0; padding-bottom:8px; font-weight:700; font-size:0.75em; text-transform:uppercase;">Confirmation Preference</label>
-            <label class="radio-option">
-                <input type="radio" name="confirmation" value="Text Cell" checked> 
-                This is a cell phone, please text to confirm.
-            </label>
-            <label class="radio-option">
-                <input type="radio" name="confirmation" value="Phone Call"> 
-                I would prefer a phone call to confirm.
-            </label>
-        </div>
-
+        <!-- Submit Button spans full width underneath -->
         <button type="submit" class="submit-btn" id="submitBtn">Confirm Booking</button>
     </form>
 </div>
