@@ -12,9 +12,9 @@
             --border: #d7ccc8;
             --text: #263238;
             --accent: #2e7d32;
-            --warning-bg: #ffebee;
-            --warning-border: #ef5350;
-            --warning-text: #c62828;
+            --warning-bg: #fff3e0;
+            --warning-border: #ffb74d;
+            --warning-text: #bf360c;
             --success-bg: #e8f5e9;
             --success-border: #a5d6a7;
             --success-text: #1b5e20;
@@ -284,6 +284,20 @@
             color: var(--success-text);
         }
 
+        .dismiss-btn {
+            background: #bf360c;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            margin-top: 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .dismiss-btn:hover { background: #870000; }
+
         .radio-group { 
             margin-top: 16px; 
             background: rgba(255, 255, 255, 0.6); 
@@ -307,16 +321,13 @@
             letter-spacing: 1.5px; 
             cursor: pointer; 
             text-transform: uppercase; 
-            transition: all 0.2s;
+            transition: background 0.2s;
         }
         button.submit-btn:hover:not(:disabled) { background: var(--primary-light); }
         button.submit-btn:disabled {
             background: #9e9e9e;
             cursor: not-allowed;
             opacity: 0.85;
-        }
-        button.submit-btn.btn-blocked {
-            background: #c62828 !important;
         }
     </style>
 
@@ -399,7 +410,7 @@
             <div style="grid-column: span 3; text-align:center; color:#90a4ae; font-size:0.85em; padding:10px;">Loading calendar availability...</div>
         </div>
 
-        <!-- Real-Time Drive Distance Alert Box -->
+        <!-- Real-Time Drive Distance Alert Box with Dismiss Button -->
         <div id="travelAlert" class="travel-alert"></div>
 
         <input type="hidden" name="available_days" id="selectedDateInput" required>
@@ -450,7 +461,6 @@
     let busySlots = [];
     let selectedDate = null;
     let selectedTime = null;
-    let isDriveBlocked = false;
     const geoCache = {};
 
     function getSelectedDurationMinutes() {
@@ -656,7 +666,6 @@
 
     async function triggerDriveCheck() {
         const addressInput = document.getElementById('address');
-        const submitBtn = document.getElementById('submitBtn');
         const currentAddr = addressInput ? addressInput.value.trim() : '';
 
         if (!currentAddr || !selectedTime || !selectedDate) {
@@ -681,7 +690,6 @@
             return;
         }
 
-        // Find the closest preceding and succeeding events
         let prevEvent = null;
         let nextEvent = null;
 
@@ -700,14 +708,13 @@
             }
         });
 
-        // Determine which event is immediately adjacent (within 90 mins)
         let referenceEvent = null;
         let isPreceding = true;
         let availableGapMinutes = 999;
 
         if (prevEvent) {
             const gap = (slotStart.getTime() - new Date(prevEvent.end).getTime()) / (60 * 1000);
-            if (gap <= 90) { // Only worry if scheduled closely after previous measure
+            if (gap <= 90) { 
                 referenceEvent = prevEvent;
                 isPreceding = true;
                 availableGapMinutes = gap;
@@ -716,14 +723,13 @@
 
         if (!referenceEvent && nextEvent) {
             const gap = (new Date(nextEvent.start).getTime() - slotEnd.getTime()) / (60 * 1000);
-            if (gap <= 90) { // Only worry if scheduled closely before next measure
+            if (gap <= 90) { 
                 referenceEvent = nextEvent;
                 isPreceding = false;
                 availableGapMinutes = gap;
             }
         }
 
-        // If the appointment is hours away from any other event, unlock immediately
         if (!referenceEvent || !referenceEvent.location || referenceEvent.location === "Scheduled Measure" || referenceEvent.location === "Booked") {
             hideTravelAlert();
             return;
@@ -737,29 +743,17 @@
             const refTown = extractTownName(referenceEvent.location, referenceEvent.summary);
             const relationText = isPreceding ? `from previous measure in` : `to next measure in`;
 
-            // Lock ONLY if the drive time is greater than the available window between measures
             if (drive.minutes > availableGapMinutes) {
-                isDriveBlocked = true;
                 showTravelAlert(
-                    `⛔ <b>Route Blocked:</b> ~<b>${drive.minutes} mins</b> drive needed (${drive.miles} mi) ${relationText} <b>${refTown}</b>, but you only have <b>${Math.round(availableGapMinutes)} mins</b>. Please pick a later slot.`,
+                    `⚠️ <b>Travel Advisory:</b> Estimated drive is ~<b>${drive.minutes} mins</b> (${drive.miles} mi) ${relationText} <b>${refTown}</b>.<br>` +
+                    `<button type="button" class="dismiss-btn" onclick="document.getElementById('travelAlert').style.display='none'">I Understand / Proceed</button>`,
                     "warning"
                 );
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.classList.add('btn-blocked');
-                    submitBtn.innerText = "Cannot Book - Insufficient Travel Time";
-                }
             } else {
-                isDriveBlocked = false;
                 showTravelAlert(
                     `🚗 <b>Drive Buffer OK:</b> ~${drive.minutes} min drive (${drive.miles} mi) ${relationText} ${refTown}.`,
                     "ok"
                 );
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('btn-blocked');
-                    submitBtn.innerText = "Confirm Booking";
-                }
             }
         } else {
             hideTravelAlert();
@@ -775,15 +769,8 @@
 
     function hideTravelAlert() {
         const alertBox = document.getElementById('travelAlert');
-        const submitBtn = document.getElementById('submitBtn');
         alertBox.innerHTML = '';
         alertBox.style.display = 'none';
-        isDriveBlocked = false;
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('btn-blocked');
-            submitBtn.innerText = "Confirm Booking";
-        }
     }
 
     document.querySelectorAll('input[name="duration_minutes"]').forEach(radio => {
@@ -796,19 +783,13 @@
     });
 
     document.getElementById('address').addEventListener('input', () => {
-        if (selectedTime) {
-            triggerDriveCheck();
-        } else {
-            hideTravelAlert();
-        }
+        if (selectedTime) triggerDriveCheck();
+        else hideTravelAlert();
     });
 
     document.getElementById('address').addEventListener('change', () => {
-        if (selectedTime) {
-            triggerDriveCheck();
-        } else {
-            hideTravelAlert();
-        }
+        if (selectedTime) triggerDriveCheck();
+        else hideTravelAlert();
     });
 
     document.getElementById('checkBtn').addEventListener('click', async () => {
@@ -822,11 +803,8 @@
             alert("Address verified successfully!");
             btn.innerText = "Valid ✓";
             btn.style.background = "#2e7d32";
-            if (selectedTime) {
-                triggerDriveCheck();
-            } else {
-                hideTravelAlert();
-            }
+            if (selectedTime) triggerDriveCheck();
+            else hideTravelAlert();
         } else {
             alert("Address not found in Washington. Please double-check spelling.");
             btn.style.background = "#c62828";
@@ -869,11 +847,6 @@
 
         if (!selectedTime) {
             alert("Please pick an available time slot before submitting.");
-            return;
-        }
-
-        if (isDriveBlocked) {
-            alert("This time slot does not provide enough driving buffer from your other appointment. Please choose another time slot.");
             return;
         }
 
