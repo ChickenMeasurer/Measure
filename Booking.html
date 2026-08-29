@@ -725,18 +725,22 @@
                     `⛔ <b>Route Blocked:</b> Estimated drive time is <b>${drive.minutes} mins</b> (${drive.miles} mi) ${relationText} <b>${refTown}</b>. Please choose a later slot to allow adequate drive time.`,
                     "warning"
                 );
-                submitBtn.disabled = true;
-                submitBtn.classList.add('btn-blocked');
-                submitBtn.innerText = "Cannot Book - Insufficient Travel Time";
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('btn-blocked');
+                    submitBtn.innerText = "Cannot Book - Insufficient Travel Time";
+                }
             } else {
                 isDriveBlocked = false;
                 showTravelAlert(
                     `🚗 <b>Drive Buffer OK:</b> ~${drive.minutes} min drive (${drive.miles} mi) ${relationText} ${refTown}.`,
                     "ok"
                 );
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-blocked');
-                submitBtn.innerText = "Confirm Booking";
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('btn-blocked');
+                    submitBtn.innerText = "Confirm Booking";
+                }
             }
         } else {
             hideTravelAlert();
@@ -773,11 +777,19 @@
     });
 
     document.getElementById('address').addEventListener('input', () => {
-        if (selectedTime) triggerDriveCheck();
+        if (selectedTime) {
+            triggerDriveCheck();
+        } else {
+            hideTravelAlert();
+        }
     });
 
     document.getElementById('address').addEventListener('change', () => {
-        if (selectedTime) triggerDriveCheck();
+        if (selectedTime) {
+            triggerDriveCheck();
+        } else {
+            hideTravelAlert();
+        }
     });
 
     document.getElementById('checkBtn').addEventListener('click', async () => {
@@ -791,7 +803,11 @@
             alert("Address verified successfully!");
             btn.innerText = "Valid ✓";
             btn.style.background = "#2e7d32";
-            triggerDriveCheck();
+            if (selectedTime) {
+                triggerDriveCheck();
+            } else {
+                hideTravelAlert();
+            }
         } else {
             alert("Address not found in Washington. Please double-check spelling.");
             btn.style.background = "#c62828";
@@ -809,6 +825,7 @@
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
+                if (slotStatus) slotStatus.innerText = "";
                 renderTimeSlots();
             } else if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
