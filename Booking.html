@@ -381,8 +381,13 @@
             }
             .form-columns {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                /* Fixed grid blowout: Enforces strict proportions so scrolling content doesn't stretch the right column */
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
                 gap: 48px; 
+            }
+            .col-left, .col-right {
+                /* Prevents flex children inside from forcing the container wider than the grid cell */
+                min-width: 0; 
             }
             .col-left .section-label:first-child,
             .col-right .section-label:first-child {
@@ -665,7 +670,6 @@
         const slotStatus = document.getElementById('slotStatus');
         container.innerHTML = '';
         
-        // Show loading spinner if calendar data hasn't arrived yet
         if (!isCalendarLoaded) {
             container.innerHTML = `
                 <div class="loading-overlay">
@@ -905,21 +909,17 @@
         }
     });
 
-    // 1. Initial UI setup
     renderDateStrip();
-    
-    // 2. Render immediately (this will show the loading spinner because isCalendarLoaded is false)
     renderTimeSlots();
 
-    // 3. Fetch from Microsoft
     async function initCalendarSync(retryCount = 0) {
         try {
             const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
                 busySlots = data.busySlots || [];
-                isCalendarLoaded = true; // Unlock the UI
-                renderTimeSlots(); // Draw the real slots
+                isCalendarLoaded = true; 
+                renderTimeSlots(); 
             } else if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             }
@@ -928,7 +928,7 @@
             if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             } else {
-                isCalendarLoaded = true; // Unlock the UI even if it fails so they aren't stuck
+                isCalendarLoaded = true; 
                 const slotStatus = document.getElementById('slotStatus');
                 if (slotStatus) slotStatus.innerText = "(Live sync unavailable - check Outlook)";
                 renderTimeSlots();
