@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Measure Dashboard</title>
+    <style>
+        :root {
+            --primary: #3e2723;
+            --primary-light: #5d4037;
+            --surface: rgba(255, 255, 255, 0.95);
+            --border: #d7ccc8;
+            --text: #263238;
+            --accent: #2e7d32;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: url('backgroundmain.png') no-repeat center center fixed; 
+            background-size: cover;
+            padding: 20px; 
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: url('textbackground.jpg') repeat;
+            background-color: #fdfbf7;
+            padding: 30px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            border-top: 8px solid var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+            text-align: center;
+        }
+
+        .login-card h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 14px;
+            margin: 20px 0;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            box-sizing: border-box;
+        }
+
+        .login-card button {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+
+        .login-card button:hover {
+            background: var(--primary-light);
+        }
+
+        #login-error {
+            color: #c62828;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        /* --- DASHBOARD SCREEN --- */
+        #dashboard-screen {
+            display: none; /* Hidden until login */
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: url('textbackground.jpg') repeat;
+            background-color: #fdfbf7;
+            padding: 20px 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            border-top: 8px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 1.6em;
+        }
+
+        .status-badge {
+            background: #e8f5e9;
+            color: #1b5e20;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85em;
+            border: 1px solid #a5d6a7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #4caf50;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        /* Grid Layout for the Monitor */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .measure-card {
+            background: var(--surface);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header .datetime {
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+
+        .card-header .rep-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 16px;
+            flex-grow: 1;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .data-row {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .data-icon {
+            margin-right: 8px;
+            font-size: 1.1em;
+            width: 20px;
+            text-align: center;
+        }
+
+        .details-box {
+            background: #f5f5f5;
+            border-left: 4px solid var(--border);
+            padding: 10px;
+            margin-top: 12px;
+            font-size: 0.9em;
+            color: #455a64;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .card-footer {
+            background: #efebe9;
+            padding: 8px 16px;
+            font-size: 0.75em;
+            color: #8d6e63;
+            text-align: right;
+            border-top: 1px solid var(--border);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            color: #78909c;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>Authorized Access</h2>
+            <p style="color: var(--primary-light); font-size: 0.9em; margin-bottom: 5px;">Enter the passcode to view scheduled measures.</p>
+            <form id="login-form">
+                <input type="password" id="passcode" placeholder="••••" required autofocus>
+                <div id="login-error">Incorrect Passcode</div>
+                <button type="submit">Unlock Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboard-screen">
+        <div class="dashboard-header">
+            <h1>Measure Dashboard</h1>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                Live Live
+            </div>
+        </div>
+
+        <div class="cards-grid" id="cards-container">
+            <!-- Cards will be injected here dynamically -->
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- 1. Passcode Logic ---
+    const loginForm = document.getElementById('login-form');
+    const passcodeBtn = document.getElementById('passcode');
+    const loginError = document.getElementById('login-error');
+    
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (passcodeBtn.value === "1967") {
+            document.getElementById('login-screen').style.display = "none";
+            document.getElementById('dashboard-screen').style.display = "block";
+            initializeDashboard(); // Start pulling data only after login
+        } else {
+            loginError.style.display = "block";
+            passcodeBtn.value = "";
+            passcodeBtn.focus();
+        }
+    });
+
+    // --- 2. Firebase Dashboard Logic ---
+    function initializeDashboard() {
+        const firebaseConfig = {
+          apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
+          authDomain: "chickenmeasurer-37304.firebaseapp.com",
+          projectId: "chickenmeasurer-37304",
+          storageBucket: "chickenmeasurer-37304.firebasestorage.app",
+          messagingSenderId: "871581751225",
+          appId: "1:871581751225:web:bec4978ba235c1c4418868",
+          measurementId: "G-Q6YZZ205BG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const container = document.getElementById('cards-container');
+
+        // Query the last 50 measures, showing the newest ones first
+        const q = query(collection(db, "submissions"), orderBy("timestamp", "desc"), limit(50));
+
+        // onSnapshot creates a real-time live feed
+        onSnapshot(q, (snapshot) => {
+            container.innerHTML = ''; // Clear out the old list
+
+            if (snapshot.empty) {
+                container.innerHTML = `<div class="empty-state"><h2>No measures scheduled yet.</h2><p>Appointments will appear here automatically.</p></div>`;
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // Safety checks for undefined data
+                const estNum = data.estimate_number ? data.estimate_number : "N/A";
+                const details = data.details ? data.details : "No additional details provided.";
+                
+                // Build the HTML card
+                const cardHTML = `
+                    <div class="measure-card">
+                        <div class="card-header">
+                            <span class="datetime">${data.available_days} @ ${data.preferred_times[0]}</span>
+                            <span class="rep-badge">Rep: ${data.salesperson}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="data-row">
+                                <span class="data-icon">👤</span> 
+                                <div><strong>${data.name}</strong></div>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-icon">📞</span> 
+                                <div><a href="tel:${data.phone}" style="color:var(--text); text-decoration:none;">${data.phone}</a> <span style="font-size:0.8em; color:#78909c;">(${data.confirmation})</span></div>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-icon">📍</span> 
+                                <div><a href="https://maps.google.com/?q=${encodeURIComponent(data.address)}" target="_blank" style="color:var(--text);">${data.address}</a></div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 15px; margin-top: 12px; font-size: 0.9em; border-top: 1px dashed var(--border); padding-top: 12px;">
+                                <div>⏱️ <strong>${data.duration}</strong></div>
+                                <div>🧾 <strong>ES:</strong> ${estNum}</div>
+                            </div>
+
+                            <div class="details-box">
+                                <em>"${details}"</em>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            Booked on: ${data.submitted_at}
+                        </div>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        });
+    }
+</script>
+</body>
+</html>
