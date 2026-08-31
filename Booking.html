@@ -381,12 +381,11 @@
             }
             .form-columns {
                 display: grid;
-                /* Fixed grid blowout: Enforces strict proportions so scrolling content doesn't stretch the right column */
+                /* Fixed grid blowout: Enforces strict proportions */
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
                 gap: 48px; 
             }
             .col-left, .col-right {
-                /* Prevents flex children inside from forcing the container wider than the grid cell */
                 min-width: 0; 
             }
             .col-left .section-label:first-child,
@@ -481,7 +480,7 @@
                     <!-- Loading state now handled dynamically via JS -->
                 </div>
 
-                <!-- Real-Time Drive Distance Alert Box -->
+                <!-- Real-Time Drive Distance Alert Box with Dismiss Button -->
                 <div id="travelAlert" class="travel-alert"></div>
 
                 <div class="radio-group">
@@ -535,7 +534,7 @@
     let busySlots = [];
     let selectedDate = null;
     let selectedTime = null;
-    let isCalendarLoaded = false; // Prevents premature rendering
+    let isCalendarLoaded = false; 
     const geoCache = {};
 
     function getSelectedDurationMinutes() {
@@ -689,6 +688,7 @@
         const DURATION_MS = durationMinutes * 60 * 1000;
 
         let availableCount = 0;
+        let selectedTimeStillValid = false;
 
         TIME_SLOTS.forEach(timeStr => {
             const minutes = timeStrToMinutes(timeStr);
@@ -735,6 +735,7 @@
                 
                 if (selectedTime === timeStr) {
                     btn.classList.add('selected');
+                    selectedTimeStillValid = true; // Confirms the slot is still fully available
                 }
 
                 btn.addEventListener('click', () => {
@@ -750,6 +751,13 @@
         });
 
         if (slotStatus) slotStatus.innerText = `(${availableCount} available)`;
+
+        // Slot Steal Protection: If a background sync blocks the user's actively selected time, clear it
+        if (selectedTime && !selectedTimeStillValid) {
+            selectedTime = null;
+            document.getElementById('selectedTimeInput').value = '';
+            hideTravelAlert();
+        }
     }
 
     async function triggerDriveCheck() {
@@ -917,9 +925,17 @@
             const res = await fetch(`${CALENDAR_ENDPOINT}?t=${Date.now()}`);
             if (res.ok) {
                 const data = await res.json();
-                busySlots = data.busySlots || [];
-                isCalendarLoaded = true; 
-                renderTimeSlots(); 
+                const newBusySlots = data.busySlots || [];
+                
+                // Compare to prevent flickering the UI on every tick
+                if (JSON.stringify(newBusySlots) !== JSON.stringify(busySlots) || !isCalendarLoaded) {
+                    busySlots = newBusySlots;
+                    isCalendarLoaded = true; 
+                    renderTimeSlots(); 
+                    
+                    // Re-evaluate travel warning if a selection exists in case it was bumped
+                    if (selectedTime) triggerDriveCheck();
+                }
             } else if (retryCount < 2) {
                 setTimeout(() => initCalendarSync(retryCount + 1), 2000);
             }
@@ -936,6 +952,9 @@
         }
     }
     initCalendarSync();
+
+    // Auto-refresh the calendar silently every 10 seconds
+    setInterval(() => initCalendarSync(), 10000);
 
     const form = document.getElementById('measureForm');
     const container = document.querySelector('.booking-card');
