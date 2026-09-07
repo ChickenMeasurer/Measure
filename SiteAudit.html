@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Site Audit | B&R Flooring</title>
+    <style>
+        :root {
+            --bg-dark: #1e293b;
+            --card-bg: #334155;
+            --accent: #10b981; /* Emerald green for the audit tool */
+            --accent-hover: #059669;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            padding-bottom: 60px;
+        }
+        h2 { text-align: center; margin-bottom: 5px; }
+        .sub-header { text-align: center; color: var(--text-muted); margin-bottom: 25px; }
+        
+        /* Job Selection Screen */
+        .job-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .job-card h3 { margin: 0 0 5px 0; color: var(--accent); }
+        .job-card p { margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.95rem; }
+        .start-btn {
+            width: 100%; padding: 15px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        }
+
+        /* Audit Form Screen (Hidden by default) */
+        #auditForm { display: none; }
+        .audit-header {
+            background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px;
+            border-left: 5px solid var(--accent);
+        }
+        .audit-header h3 { margin: 0 0 5px 0; }
+        .audit-header p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* Photo Upload Grid */
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .photo-slot {
+            background: var(--card-bg); border-radius: 10px; padding: 15px 10px;
+            text-align: center; border: 2px dashed #475569; position: relative;
+        }
+        .photo-slot h4 { margin: 0 0 10px 0; font-size: 0.9rem; color: #cbd5e1; }
+        .camera-btn {
+            background: #3b82f6; color: white; padding: 10px; border-radius: 50%;
+            width: 50px; height: 50px; border: none; font-size: 1.5rem; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        /* Hidden file input that triggers the phone camera natively */
+        input[type="file"] { display: none; }
+        
+        .thumbnail {
+            width: 100%; height: 100px; object-fit: cover; border-radius: 8px;
+            margin-top: 10px; display: none; border: 2px solid var(--accent);
+        }
+
+        /* Finalize Button */
+        .save-btn {
+            width: 100%; padding: 18px; background: #f59e0b; color: white;
+            border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: SELECT A JOB -->
+    <div id="jobSelector">
+        <h2>📋 Site Audits</h2>
+        <div class="sub-header">Select a project to begin walkthrough</div>
+        <div id="jobList">
+            <div style="text-align:center; color: #10b981;">Syncing today's measures...</div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: THE AUDIT TEMPLATE -->
+    <div id="auditForm">
+        <button onclick="backToList()" style="background:none; border:none; color:#3b82f6; font-size:1rem; padding:0 0 15px 0; cursor:pointer;">&#8592; Back to Route</button>
+        
+        <div class="audit-header">
+            <h3 id="auditName">Client Name</h3>
+            <p id="auditAddress">123 Address Rd</p>
+        </div>
+
+        <h3 style="margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px;">Required Photos</h3>
+        
+        <div class="photo-grid">
+            <!-- 1. Overview -->
+            <div class="photo-slot">
+                <h4>Home Overview</h4>
+                <label class="camera-btn">
+                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview1')">
+                </label>
+                <img id="preview1" class="thumbnail">
+            </div>
+
+            <!-- 2. Transitions -->
+            <div class="photo-slot">
+                <h4>Transitions</h4>
+                <label class="camera-btn">
+                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview2')">
+                </label>
+                <img id="preview2" class="thumbnail">
+            </div>
+
+            <!-- 3. Subfloor / Vents -->
+            <div class="photo-slot">
+                <h4>Subfloor (Vents)</h4>
+                <label class="camera-btn">
+                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview3')">
+                </label>
+                <img id="preview3" class="thumbnail">
+            </div>
+
+            <!-- 4. Appliances -->
+            <div class="photo-slot">
+                <h4>Appliances</h4>
+                <label class="camera-btn">
+                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview4')">
+                </label>
+                <img id="preview4" class="thumbnail">
+            </div>
+
+            <!-- 5. Base Trim -->
+            <div class="photo-slot" style="grid-column: span 2;">
+                <h4>Base Trim / Molding</h4>
+                <label class="camera-btn">
+                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview5')">
+                </label>
+                <img id="preview5" class="thumbnail">
+            </div>
+        </div>
+
+        <button class="save-btn" onclick="packageAudit()">📦 Package & Save Audit</button>
+    </div>
+
+    <script>
+        const API_URL = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
+
+        async function fetchJobs() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                const listDiv = document.getElementById('jobList');
+                listDiv.innerHTML = "";
+                
+                if (!data.busySlots || data.busySlots.length === 0) {
+                    listDiv.innerHTML = "<div style='text-align:center;'>No jobs found.</div>";
+                    return;
+                }
+
+                const today = new Date();
+                const dayEvents = data.busySlots.filter(slot => {
+                    const d = new Date(slot.start);
+                    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+                });
+
+                if (dayEvents.length === 0) {
+                    listDiv.innerHTML = "<div style='text-align:center;'>No measures scheduled for today.</div>";
+                    return;
+                }
+
+                dayEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+                dayEvents.forEach(event => {
+                    const cleanTitle = event.summary.replace("Measure: ", "");
+                    const cardHTML = `
+                        <div class="job-card">
+                            <h3>${cleanTitle}</h3>
+                            <p>📍 ${event.location}</p>
+                            <button class="start-btn" onclick="openAudit('${cleanTitle.replace(/'/g, "\\'")}', '${event.location.replace(/'/g, "\\'")}')">Start Audit</button>
+                        </div>
+                    `;
+                    listDiv.innerHTML += cardHTML;
+                });
+
+            } catch (error) {
+                document.getElementById('jobList').innerHTML = "<div style='text-align:center;'>Error loading jobs.</div>";
+            }
+        }
+
+        function openAudit(name, address) {
+            document.getElementById('jobSelector').style.display = 'none';
+            document.getElementById('auditForm').style.display = 'block';
+            document.getElementById('auditName').innerText = name;
+            document.getElementById('auditAddress').innerText = address;
+        }
+
+        function backToList() {
+            document.getElementById('auditForm').style.display = 'none';
+            document.getElementById('jobSelector').style.display = 'block';
+        }
+
+        // Magically display a thumbnail of the photo immediately after it is taken
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function packageAudit() {
+            // Future hook to compress images and upload to Firebase Storage
+            alert("This will eventually package the 5 photos, attach the ArcSite PDF, and upload the whole bundle to Firebase! For now, your images are successfully cached in the browser.");
+        }
+
+        fetchJobs();
+    </script>
+</body>
+</html>
