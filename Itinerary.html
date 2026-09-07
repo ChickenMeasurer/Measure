@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Itinerary | B&R Flooring</title>
+    <style>
+        :root {
+            --bg-dark: #1e293b;
+            --card-bg: #334155;
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            padding-bottom: 40px;
+        }
+        h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .date-display {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+        .loading {
+            text-align: center;
+            color: var(--accent);
+            font-weight: bold;
+            margin-top: 40px;
+        }
+        .job-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .time-block {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        .job-title {
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+        }
+        .job-address {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        .nav-btn {
+            display: block;
+            width: 100%;
+            background-color: #22c55e;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .nav-btn:active {
+            background-color: #16a34a;
+        }
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 40px;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🚗 Today's Route</h2>
+    <div class="date-display" id="todayDate">Loading date...</div>
+
+    <div id="itineraryList">
+        <div class="loading">Syncing with Exchange...</div>
+    </div>
+
+    <script>
+        const API_URL = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
+        
+        // Display today's date
+        const todayOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-US', todayOptions);
+
+        async function fetchTodayRoute() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (!data.busySlots || data.busySlots.length === 0) {
+                    showEmpty("No measures found in calendar.");
+                    return;
+                }
+
+                // Filter for ONLY today's events
+                const now = new Date();
+                const todaysEvents = data.busySlots.filter(slot => {
+                    const eventDate = new Date(slot.start);
+                    return eventDate.getDate() === now.getDate() &&
+                           eventDate.getMonth() === now.getMonth() &&
+                           eventDate.getFullYear() === now.getFullYear();
+                });
+
+                // Sort chronologically
+                todaysEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+                renderCards(todaysEvents);
+
+            } catch (error) {
+                console.error("Error fetching route:", error);
+                showEmpty("Failed to load route. Check connection.");
+            }
+        }
+
+        function renderCards(events) {
+            const listDiv = document.getElementById('itineraryList');
+            listDiv.innerHTML = ""; // Clear loading text
+
+            if (events.length === 0) {
+                showEmpty("Your schedule is clear for today!");
+                return;
+            }
+
+            events.forEach(event => {
+                const startDate = new Date(event.start);
+                
+                // Format time (e.g. "10:00 AM")
+                const timeString = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                
+                // Clean up summary (Remove "Measure:" if present to save space)
+                const cleanTitle = event.summary.replace("Measure: ", "");
+
+                // Create Google Maps Direct Link
+                const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`;
+
+                const cardHTML = `
+                    <div class="job-card">
+                        <div class="time-block">${timeString}</div>
+                        <div class="job-title">${cleanTitle}</div>
+                        <div class="job-address">📍 ${event.location}</div>
+                        <a href="${mapsUrl}" target="_blank" class="nav-btn">🧭 Start Navigation</a>
+                    </div>
+                `;
+                listDiv.innerHTML += cardHTML;
+            });
+        }
+
+        function showEmpty(message) {
+            document.getElementById('itineraryList').innerHTML = `<div class="empty-state">${message}</div>`;
+        }
+
+        // Initialize
+        fetchTodayRoute();
+    </script>
+</body>
+</html>
