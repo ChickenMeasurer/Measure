@@ -4,117 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Site Audit | B&R Flooring</title>
+    
+    <!-- JSZip Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
     <style>
         :root {
-            --bg-dark: #1e293b;
-            --card-bg: #334155;
-            --accent: #10b981; 
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-dark: #1e293b; --card-bg: #334155; --accent: #10b981; 
+            --text-main: #f8fafc; --text-muted: #94a3b8;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            margin: 0;
-            padding: 15px;
-            padding-bottom: 60px;
-        }
-        h2 { text-align: center; margin-bottom: 5px; }
-        .sub-header { text-align: center; color: var(--text-muted); margin-bottom: 25px; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); margin: 0; padding: 15px; padding-bottom: 60px; }
+        h2 { text-align: center; margin-bottom: 15px; }
         
-        .job-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
+        /* Date Navigation UI */
+        .date-navigation { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); border-radius: 12px; padding: 10px 15px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .nav-arrow { background-color: var(--accent); color: white; border: none; border-radius: 8px; padding: 10px 18px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        .nav-arrow:active { background-color: #059669; }
+        .date-display { text-align: center; font-size: 1.05rem; font-weight: 600; color: var(--text-main); }
+        .date-sub { display: block; font-size: 0.85rem; color: var(--text-muted); font-weight: normal; margin-top: 2px; }
+
+        .job-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease-out; }
         .job-card h3 { margin: 0 0 5px 0; color: var(--accent); }
         .job-card p { margin: 0 0 15px 0; color: var(--text-muted); font-size: 0.95rem; }
-        .start-btn {
-            width: 100%; padding: 15px; background: var(--accent); color: white;
-            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
-        }
-
+        .start-btn { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        
         #auditForm { display: none; }
-        .audit-header {
-            background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px;
-            border-left: 5px solid var(--accent);
-        }
+        .audit-header { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--accent); }
         .audit-header h3 { margin: 0 0 5px 0; }
         .audit-header p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
-
-        /* Updated Photo Slot Styling */
-        .photo-slot {
-            background: var(--card-bg); 
-            border-radius: 10px; 
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #475569; 
-        }
-        .slot-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+        
+        .photo-slot { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #475569; }
+        .slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .slot-header h4 { margin: 0; font-size: 1rem; color: var(--text-main); }
-        
-        .camera-btn {
-            background: #3b82f6; color: white; padding: 8px 15px; border-radius: 8px;
-            border: none; font-size: 0.95rem; font-weight: bold; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
+        .camera-btn { background: #3b82f6; color: white; padding: 8px 15px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
         input[type="file"] { display: none; }
+        .thumbnail-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; min-height: 80px; }
+        .thumbnail-row img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--accent); flex-shrink: 0; animation: popIn 0.3s ease-out; }
+        .empty-slot-text { color: var(--text-muted); font-size: 0.85rem; font-style: italic; line-height: 80px; margin: 0; }
         
-        /* New Horizontal Filmstrip for Multiple Photos */
-        .thumbnail-row {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 5px;
-            min-height: 80px;
-        }
-        .thumbnail-row img {
-            width: 80px; 
-            height: 80px; 
-            object-fit: cover; 
-            border-radius: 8px; 
-            border: 2px solid var(--accent);
-            flex-shrink: 0;
-            animation: popIn 0.3s ease-out;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        /* Empty state styling */
-        .empty-slot-text {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-style: italic;
-            line-height: 80px;
-            margin: 0;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .save-btn {
-            width: 100%; padding: 18px; background: #f59e0b; color: white;
-            border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
-            margin-top: 20px;
-        }
+        .save-btn { width: 100%; padding: 18px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div id="jobSelector">
         <h2>📋 Site Audits</h2>
-        <div class="sub-header">Select a project to begin walkthrough</div>
-        <div id="jobList">
-            <div style="text-align:center; color: #10b981;">Syncing today's measures...</div>
+        
+        <div class="date-navigation">
+            <button class="nav-arrow" onclick="changeDay(-1)">&#8592;</button>
+            <div class="date-display" id="currentDateDisplay">
+                Loading...
+                <span class="date-sub">Syncing Calendar</span>
+            </div>
+            <button class="nav-arrow" onclick="changeDay(1)">&#8594;</button>
         </div>
+
+        <div id="jobList"><div style="text-align:center; color: #10b981;">Syncing measures...</div></div>
     </div>
 
     <div id="auditForm">
@@ -127,115 +75,116 @@
 
         <h3 style="margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px;">Required Photos</h3>
         
-        <!-- 1. Overview -->
         <div class="photo-slot">
-            <div class="slot-header">
-                <h4>Home Overview</h4>
-                <label class="camera-btn">
-                    📷 Add Photo
-                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-overview')">
-                </label>
-            </div>
+            <div class="slot-header"><h4>Home Overview</h4><label class="camera-btn">📷 Add Photo<input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-overview', 'Overview')"></label></div>
             <div id="row-overview" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
-        <!-- 2. Transitions -->
         <div class="photo-slot">
-            <div class="slot-header">
-                <h4>Transitions</h4>
-                <label class="camera-btn">
-                    📷 Add Photo
-                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-transitions')">
-                </label>
-            </div>
+            <div class="slot-header"><h4>Transitions</h4><label class="camera-btn">📷 Add Photo<input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-transitions', 'Transitions')"></label></div>
             <div id="row-transitions" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
-        <!-- 3. Subfloor -->
         <div class="photo-slot">
-            <div class="slot-header">
-                <h4>Subfloor (Vents)</h4>
-                <label class="camera-btn">
-                    📷 Add Photo
-                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-subfloor')">
-                </label>
-            </div>
+            <div class="slot-header"><h4>Subfloor (Vents)</h4><label class="camera-btn">📷 Add Photo<input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-subfloor', 'Heat Vent')"></label></div>
             <div id="row-subfloor" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
-        <!-- 4. Appliances -->
         <div class="photo-slot">
-            <div class="slot-header">
-                <h4>Appliances</h4>
-                <label class="camera-btn">
-                    📷 Add Photo
-                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-appliances')">
-                </label>
-            </div>
+            <div class="slot-header"><h4>Appliances</h4><label class="camera-btn">📷 Add Photo<input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-appliances', 'Appliance')"></label></div>
             <div id="row-appliances" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
-        <!-- 5. Base Trim -->
         <div class="photo-slot">
-            <div class="slot-header">
-                <h4>Base Trim / Molding</h4>
-                <label class="camera-btn">
-                    📷 Add Photo
-                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-trim')">
-                </label>
-            </div>
+            <div class="slot-header"><h4>Base Trim / Molding</h4><label class="camera-btn">📷 Add Photo<input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-trim', 'Base Trim')"></label></div>
             <div id="row-trim" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
-        <button class="save-btn" onclick="packageAudit()">📦 Package & Save Audit</button>
+        <button class="save-btn" id="saveButton" onclick="packageAudit()">📦 Package & Save Zip</button>
     </div>
 
     <script>
         const API_URL = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
 
+        let allEvents = [];
+        let viewDate = new Date();
+        let auditData = {};
+
         async function fetchJobs() {
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-                const listDiv = document.getElementById('jobList');
-                listDiv.innerHTML = "";
                 
-                if (!data.busySlots || data.busySlots.length === 0) {
-                    listDiv.innerHTML = "<div style='text-align:center;'>No jobs found.</div>";
-                    return;
+                if (data.busySlots && data.busySlots.length > 0) {
+                    allEvents = data.busySlots;
                 }
-
-                const today = new Date();
-                const dayEvents = data.busySlots.filter(slot => {
-                    const d = new Date(slot.start);
-                    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
-                });
-
-                if (dayEvents.length === 0) {
-                    listDiv.innerHTML = "<div style='text-align:center;'>No measures scheduled for today.</div>";
-                    return;
-                }
-
-                dayEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-
-                dayEvents.forEach(event => {
-                    const cleanTitle = event.summary.replace("Measure: ", "");
-                    const cardHTML = `
-                        <div class="job-card">
-                            <h3>${cleanTitle}</h3>
-                            <p>📍 ${event.location}</p>
-                            <button class="start-btn" onclick="openAudit('${cleanTitle.replace(/'/g, "\\'")}', '${event.location.replace(/'/g, "\\'")}')">Start Audit</button>
-                        </div>
-                    `;
-                    listDiv.innerHTML += cardHTML;
-                });
-
-            } catch (error) {
-                document.getElementById('jobList').innerHTML = "<div style='text-align:center;'>Error loading jobs.</div>";
+                updateView();
+            } catch (error) { 
+                document.getElementById('jobList').innerHTML = "<div style='text-align:center;'>Error loading jobs.</div>"; 
+                document.getElementById('currentDateDisplay').innerHTML = `Error<span class="date-sub">Offline Mode</span>`;
             }
         }
 
+        function changeDay(offset) {
+            viewDate.setDate(viewDate.getDate() + offset);
+            updateView();
+        }
+
+        function updateView() {
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            const formattedDate = viewDate.toLocaleDateString('en-US', options);
+            
+            const today = new Date();
+            let relativeLabel = "";
+            
+            const msDiff = viewDate.getTime() - today.getTime();
+            const daysDiff = Math.round(msDiff / (1000 * 60 * 60 * 24));
+
+            if (daysDiff === 0) relativeLabel = "Today";
+            else if (daysDiff === 1) relativeLabel = "Tomorrow";
+            else if (daysDiff === -1) relativeLabel = "Yesterday";
+            else relativeLabel = "Scheduled Route";
+
+            document.getElementById('currentDateDisplay').innerHTML = `${relativeLabel}<span class="date-sub">${formattedDate}</span>`;
+
+            const listDiv = document.getElementById('jobList');
+            listDiv.innerHTML = "";
+            
+            const dayEvents = allEvents.filter(slot => {
+                const d = new Date(slot.start);
+                return d.getDate() === viewDate.getDate() &&
+                       d.getMonth() === viewDate.getMonth() &&
+                       d.getFullYear() === viewDate.getFullYear();
+            });
+
+            if (dayEvents.length === 0) {
+                listDiv.innerHTML = "<div style='text-align:center; padding: 20px 0;'>No measures scheduled for this day.</div>";
+                return;
+            }
+
+            dayEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+            dayEvents.forEach(event => {
+                const cleanTitle = event.summary.replace("Measure: ", "");
+                listDiv.innerHTML += `
+                    <div class="job-card">
+                        <h3>${cleanTitle}</h3>
+                        <p>📍 ${event.location}</p>
+                        <button class="start-btn" onclick="openAudit('${cleanTitle.replace(/'/g, "\\'")}', '${event.location.replace(/'/g, "\\'")}')">Start Audit</button>
+                    </div>
+                `;
+            });
+        }
+
         function openAudit(name, address) {
+            // WIPE PREVIOUS JOB DATA SO PHOTOS DON'T MIX
+            auditData = { 'Overview': [], 'Transitions': [], 'Heat Vent': [], 'Appliance': [], 'Base Trim': [] };
+            
+            // CLEAR THE UI FILMSTRIPS
+            document.querySelectorAll('.thumbnail-row').forEach(row => {
+                row.innerHTML = '<span class="empty-slot-text">No photos yet...</span>';
+            });
+
             document.getElementById('jobSelector').style.display = 'none';
             document.getElementById('auditForm').style.display = 'block';
             document.getElementById('auditName').innerText = name;
@@ -247,12 +196,12 @@
             document.getElementById('jobSelector').style.display = 'block';
         }
 
-        // New function to append multiple photos in a row
-        function addPhoto(input, rowId) {
+        function addPhoto(input, rowId, category) {
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                auditData[category].push(file);
+
                 const rowContainer = document.getElementById(rowId);
-                
-                // Clear the "No photos yet..." text on the first photo
                 if (rowContainer.querySelector('.empty-slot-text')) {
                     rowContainer.innerHTML = '';
                 }
@@ -263,17 +212,55 @@
                     newImg.src = e.target.result;
                     rowContainer.appendChild(newImg);
                 }
-                reader.readAsDataURL(input.files[0]);
-                
-                // Reset the input value so you can take another picture right away
+                reader.readAsDataURL(file);
                 input.value = "";
             }
         }
 
-        function packageAudit() {
-            alert("Ready for the compression & upload phase!");
+        async function packageAudit() {
+            const saveBtn = document.getElementById('saveButton');
+            saveBtn.innerText = "⏳ Compiling Zip...";
+            saveBtn.style.background = "#475569";
+            saveBtn.disabled = true;
+
+            try {
+                const zip = new JSZip();
+                const rawName = document.getElementById('auditName').innerText;
+                const nameParts = rawName.trim().split(' ');
+                const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : rawName;
+
+                for (const [category, files] of Object.entries(auditData)) {
+                    files.forEach((file, index) => {
+                        const extension = file.name.split('.').pop() || 'jpg';
+                        const newFilename = `${lastName} ${category} ${index + 1}.${extension}`;
+                        zip.file(newFilename, file);
+                    });
+                }
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const downloadLink = document.createElement("a");
+                downloadLink.href = URL.createObjectURL(zipBlob);
+                downloadLink.download = `${lastName}_Audit.zip`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(downloadLink.href);
+
+                alert("✅ Zip file saved to your device Downloads folder!");
+                backToList();
+
+            } catch (error) {
+                console.error("Zipping error:", error);
+                alert("❌ Error compiling photos.");
+            } finally {
+                saveBtn.innerText = "📦 Package & Save Zip";
+                saveBtn.style.background = "#f59e0b";
+                saveBtn.disabled = false;
+            }
         }
 
+        // Initialize
         fetchJobs();
     </script>
 </body>
