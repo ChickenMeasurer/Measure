@@ -23,14 +23,48 @@
         h2 {
             text-align: center;
             font-size: 1.5rem;
-            margin-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        
+        /* New Date Navigation Bar */
+        .date-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .nav-arrow {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .nav-arrow:active {
+            background-color: #2563eb;
         }
         .date-display {
             text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-            font-size: 1rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
         }
+        .date-sub {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: normal;
+            margin-top: 2px;
+        }
+
         .loading {
             text-align: center;
             color: var(--accent);
@@ -43,6 +77,7 @@
             padding: 20px;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s ease-out;
         }
         .time-block {
             font-size: 1.25rem;
@@ -83,12 +118,26 @@
             margin-top: 40px;
             font-size: 1.1rem;
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
 
-    <h2>🚗 Today's Route</h2>
-    <div class="date-display" id="todayDate">Loading date...</div>
+    <h2>🚗 Route Planner</h2>
+    
+    <!-- Date Navigation UI -->
+    <div class="date-navigation">
+        <button class="nav-arrow" onclick="changeDay(-1)">&#8592;</button>
+        <div class="date-display" id="currentDateDisplay">
+            Loading...
+            <span class="date-sub">Syncing Calendar</span>
+        </div>
+        <button class="nav-arrow" onclick="changeDay(1)">&#8594;</button>
+    </div>
 
     <div id="itineraryList">
         <div class="loading">Syncing with Exchange...</div>
@@ -97,59 +146,78 @@
     <script>
         const API_URL = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
         
-        // Display today's date
-        const todayOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-        document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-US', todayOptions);
+        let allEvents = []; // This caches the data so flipping days is instant
+        let viewDate = new Date(); // The date currently being viewed
 
-        async function fetchTodayRoute() {
+        async function fetchRouteData() {
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
                 
-                if (!data.busySlots || data.busySlots.length === 0) {
-                    showEmpty("No measures found in calendar.");
-                    return;
+                if (data.busySlots && data.busySlots.length > 0) {
+                    allEvents = data.busySlots;
                 }
-
-                // Filter for ONLY today's events
-                const now = new Date();
-                const todaysEvents = data.busySlots.filter(slot => {
-                    const eventDate = new Date(slot.start);
-                    return eventDate.getDate() === now.getDate() &&
-                           eventDate.getMonth() === now.getMonth() &&
-                           eventDate.getFullYear() === now.getFullYear();
-                });
-
-                // Sort chronologically
-                todaysEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-
-                renderCards(todaysEvents);
+                
+                // Once data is loaded, update the UI
+                updateView();
 
             } catch (error) {
                 console.error("Error fetching route:", error);
                 showEmpty("Failed to load route. Check connection.");
+                document.getElementById('currentDateDisplay').innerHTML = `Error<span class="date-sub">Offline Mode</span>`;
             }
+        }
+
+        function changeDay(offset) {
+            viewDate.setDate(viewDate.getDate() + offset);
+            updateView();
+        }
+
+        function updateView() {
+            // 1. Update the Date Header
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            const formattedDate = viewDate.toLocaleDateString('en-US', options);
+            
+            // Add a helpful sub-label if it's Today, Tomorrow, or Yesterday
+            const today = new Date();
+            let relativeLabel = "";
+            
+            const msDiff = viewDate.getTime() - today.getTime();
+            const daysDiff = Math.round(msDiff / (1000 * 60 * 60 * 24));
+
+            if (daysDiff === 0) relativeLabel = "Today";
+            else if (daysDiff === 1) relativeLabel = "Tomorrow";
+            else if (daysDiff === -1) relativeLabel = "Yesterday";
+            else relativeLabel = "Scheduled Route";
+
+            document.getElementById('currentDateDisplay').innerHTML = `${relativeLabel}<span class="date-sub">${formattedDate}</span>`;
+
+            // 2. Filter events for the selected day
+            const dayEvents = allEvents.filter(slot => {
+                const eventDate = new Date(slot.start);
+                return eventDate.getDate() === viewDate.getDate() &&
+                       eventDate.getMonth() === viewDate.getMonth() &&
+                       eventDate.getFullYear() === viewDate.getFullYear();
+            });
+
+            // 3. Sort chronologically and render
+            dayEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+            renderCards(dayEvents);
         }
 
         function renderCards(events) {
             const listDiv = document.getElementById('itineraryList');
-            listDiv.innerHTML = ""; // Clear loading text
+            listDiv.innerHTML = ""; // Clear loading text/previous cards
 
             if (events.length === 0) {
-                showEmpty("Your schedule is clear for today!");
+                showEmpty("Your schedule is clear for this day!");
                 return;
             }
 
             events.forEach(event => {
                 const startDate = new Date(event.start);
-                
-                // Format time (e.g. "10:00 AM")
                 const timeString = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                
-                // Clean up summary (Remove "Measure:" if present to save space)
                 const cleanTitle = event.summary.replace("Measure: ", "");
-
-                // Create Google Maps Direct Link
                 const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`;
 
                 const cardHTML = `
@@ -168,8 +236,8 @@
             document.getElementById('itineraryList').innerHTML = `<div class="empty-state">${message}</div>`;
         }
 
-        // Initialize
-        fetchTodayRoute();
+        // Initialize the app on load
+        fetchRouteData();
     </script>
 </body>
 </html>
