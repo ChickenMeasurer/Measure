@@ -8,8 +8,7 @@
         :root {
             --bg-dark: #1e293b;
             --card-bg: #334155;
-            --accent: #10b981; /* Emerald green for the audit tool */
-            --accent-hover: #059669;
+            --accent: #10b981; 
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -24,7 +23,6 @@
         h2 { text-align: center; margin-bottom: 5px; }
         .sub-header { text-align: center; color: var(--text-muted); margin-bottom: 25px; }
         
-        /* Job Selection Screen */
         .job-card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -39,7 +37,6 @@
             border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
         }
 
-        /* Audit Form Screen (Hidden by default) */
         #auditForm { display: none; }
         .audit-header {
             background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px;
@@ -48,27 +45,61 @@
         .audit-header h3 { margin: 0 0 5px 0; }
         .audit-header p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
 
-        /* Photo Upload Grid */
-        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        /* Updated Photo Slot Styling */
         .photo-slot {
-            background: var(--card-bg); border-radius: 10px; padding: 15px 10px;
-            text-align: center; border: 2px dashed #475569; position: relative;
+            background: var(--card-bg); 
+            border-radius: 10px; 
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #475569; 
         }
-        .photo-slot h4 { margin: 0 0 10px 0; font-size: 0.9rem; color: #cbd5e1; }
+        .slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .slot-header h4 { margin: 0; font-size: 1rem; color: var(--text-main); }
+        
         .camera-btn {
-            background: #3b82f6; color: white; padding: 10px; border-radius: 50%;
-            width: 50px; height: 50px; border: none; font-size: 1.5rem; cursor: pointer;
-            display: inline-flex; align-items: center; justify-content: center;
+            background: #3b82f6; color: white; padding: 8px 15px; border-radius: 8px;
+            border: none; font-size: 0.95rem; font-weight: bold; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
         }
-        /* Hidden file input that triggers the phone camera natively */
         input[type="file"] { display: none; }
         
-        .thumbnail {
-            width: 100%; height: 100px; object-fit: cover; border-radius: 8px;
-            margin-top: 10px; display: none; border: 2px solid var(--accent);
+        /* New Horizontal Filmstrip for Multiple Photos */
+        .thumbnail-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            min-height: 80px;
+        }
+        .thumbnail-row img {
+            width: 80px; 
+            height: 80px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            border: 2px solid var(--accent);
+            flex-shrink: 0;
+            animation: popIn 0.3s ease-out;
+        }
+        
+        /* Empty state styling */
+        .empty-slot-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-style: italic;
+            line-height: 80px;
+            margin: 0;
         }
 
-        /* Finalize Button */
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
         .save-btn {
             width: 100%; padding: 18px; background: #f59e0b; color: white;
             border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
@@ -78,7 +109,6 @@
 </head>
 <body>
 
-    <!-- SCREEN 1: SELECT A JOB -->
     <div id="jobSelector">
         <h2>📋 Site Audits</h2>
         <div class="sub-header">Select a project to begin walkthrough</div>
@@ -87,7 +117,6 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: THE AUDIT TEMPLATE -->
     <div id="auditForm">
         <button onclick="backToList()" style="background:none; border:none; color:#3b82f6; font-size:1rem; padding:0 0 15px 0; cursor:pointer;">&#8592; Back to Route</button>
         
@@ -98,51 +127,64 @@
 
         <h3 style="margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 5px;">Required Photos</h3>
         
-        <div class="photo-grid">
-            <!-- 1. Overview -->
-            <div class="photo-slot">
+        <!-- 1. Overview -->
+        <div class="photo-slot">
+            <div class="slot-header">
                 <h4>Home Overview</h4>
                 <label class="camera-btn">
-                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview1')">
+                    📷 Add Photo
+                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-overview')">
                 </label>
-                <img id="preview1" class="thumbnail">
             </div>
+            <div id="row-overview" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
+        </div>
 
-            <!-- 2. Transitions -->
-            <div class="photo-slot">
+        <!-- 2. Transitions -->
+        <div class="photo-slot">
+            <div class="slot-header">
                 <h4>Transitions</h4>
                 <label class="camera-btn">
-                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview2')">
+                    📷 Add Photo
+                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-transitions')">
                 </label>
-                <img id="preview2" class="thumbnail">
             </div>
+            <div id="row-transitions" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
+        </div>
 
-            <!-- 3. Subfloor / Vents -->
-            <div class="photo-slot">
+        <!-- 3. Subfloor -->
+        <div class="photo-slot">
+            <div class="slot-header">
                 <h4>Subfloor (Vents)</h4>
                 <label class="camera-btn">
-                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview3')">
+                    📷 Add Photo
+                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-subfloor')">
                 </label>
-                <img id="preview3" class="thumbnail">
             </div>
+            <div id="row-subfloor" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
+        </div>
 
-            <!-- 4. Appliances -->
-            <div class="photo-slot">
+        <!-- 4. Appliances -->
+        <div class="photo-slot">
+            <div class="slot-header">
                 <h4>Appliances</h4>
                 <label class="camera-btn">
-                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview4')">
+                    📷 Add Photo
+                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-appliances')">
                 </label>
-                <img id="preview4" class="thumbnail">
             </div>
+            <div id="row-appliances" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
+        </div>
 
-            <!-- 5. Base Trim -->
-            <div class="photo-slot" style="grid-column: span 2;">
+        <!-- 5. Base Trim -->
+        <div class="photo-slot">
+            <div class="slot-header">
                 <h4>Base Trim / Molding</h4>
                 <label class="camera-btn">
-                    📷<input type="file" accept="image/*" capture="environment" onchange="previewImage(this, 'preview5')">
+                    📷 Add Photo
+                    <input type="file" accept="image/*" capture="environment" onchange="addPhoto(this, 'row-trim')">
                 </label>
-                <img id="preview5" class="thumbnail">
             </div>
+            <div id="row-trim" class="thumbnail-row"><span class="empty-slot-text">No photos yet...</span></div>
         </div>
 
         <button class="save-btn" onclick="packageAudit()">📦 Package & Save Audit</button>
@@ -205,22 +247,31 @@
             document.getElementById('jobSelector').style.display = 'block';
         }
 
-        // Magically display a thumbnail of the photo immediately after it is taken
-        function previewImage(input, previewId) {
-            const preview = document.getElementById(previewId);
+        // New function to append multiple photos in a row
+        function addPhoto(input, rowId) {
             if (input.files && input.files[0]) {
+                const rowContainer = document.getElementById(rowId);
+                
+                // Clear the "No photos yet..." text on the first photo
+                if (rowContainer.querySelector('.empty-slot-text')) {
+                    rowContainer.innerHTML = '';
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
+                    const newImg = document.createElement('img');
+                    newImg.src = e.target.result;
+                    rowContainer.appendChild(newImg);
                 }
                 reader.readAsDataURL(input.files[0]);
+                
+                // Reset the input value so you can take another picture right away
+                input.value = "";
             }
         }
 
         function packageAudit() {
-            // Future hook to compress images and upload to Firebase Storage
-            alert("This will eventually package the 5 photos, attach the ArcSite PDF, and upload the whole bundle to Firebase! For now, your images are successfully cached in the browser.");
+            alert("Ready for the compression & upload phase!");
         }
 
         fetchJobs();
