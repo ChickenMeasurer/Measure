@@ -24,11 +24,9 @@
         .dot.historical { background: #3b82f6; }
         .dot.live { background: #10b981; }
         
-        /* New Live Status Bar */
-        #status-bar { background: #f59e0b; color: white; font-size: 0.85rem; padding: 6px; font-weight: bold; border-radius: 6px; }
+        #status-bar { background: #10b981; color: white; font-size: 0.85rem; padding: 6px; font-weight: bold; border-radius: 6px; }
         
         .back-btn { position: absolute; left: 15px; top: 18px; color: #3b82f6; text-decoration: none; font-weight: bold; }
-
         #map { flex-grow: 1; width: 100%; z-index: 1; }
     </style>
 </head>
@@ -41,7 +39,7 @@
             <span><div class="dot historical"></div> Past Jobs</span>
             <span><div class="dot live"></div> Upcoming Route</span>
         </div>
-        <div id="status-bar">Initializing Map...</div>
+        <div id="status-bar">Loading Map...</div>
     </div>
 
     <div id="map"></div>
@@ -64,7 +62,7 @@
             iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
         });
 
-        function setStatus(message, color = "#f59e0b") {
+        function setStatus(message, color = "#10b981") {
             const bar = document.getElementById('status-bar');
             bar.innerText = message;
             bar.style.background = color;
@@ -72,7 +70,6 @@
 
         async function geocodeAddress(address) {
             try {
-                // Attached your specific email to prevent silent blocking
                 const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&email=chickenmeasurer@outlook.com`;
                 const response = await fetch(url);
                 const data = await response.json();
@@ -82,48 +79,48 @@
         }
 
         async function loadData() {
-            let histSuccess = 0, histFail = 0;
+            // 1. Check if we have cached coordinates saved in browser memory already!
+            let cachedPins = localStorage.getItem('br_historical_pins');
             
-            // 1. Load History
-            try {
-                setStatus("Checking history.json...", "#3b82f6");
-                const response = await fetch('history.json');
-                
-                if (response.ok) {
+            if (cachedPins) {
+                setStatus("Loading cached history (Instant)...", "#3b82f6");
+                const pins = JSON.parse(cachedPins);
+                pins.forEach(pin => {
+                    L.marker([pin.lat, pin.lon], {icon: historicalIcon}).addTo(map).bindPopup(`<b>${pin.client}</b><br>${pin.date}`);
+                });
+            } else {
+                // If no cache exists yet, build it once
+                setStatus("Building history cache (First time only)...", "#f59e0b");
+                try {
+                    const response = await fetch('history.json');
                     const history = await response.json();
-                    
+                    let pinArray = [];
+
                     for (const job of history) {
-                        setStatus(`Locating Past Job: ${job.client}...`, "#3b82f6");
+                        setStatus(`Caching: ${job.client}...`, "#f59e0b");
                         const coords = await geocodeAddress(job.address);
-                        
                         if (coords) {
+                            pinArray.push({ client: job.client, date: job.date, lat: coords[0], lon: coords[1] });
                             L.marker(coords, {icon: historicalIcon}).addTo(map).bindPopup(`<b>${job.client}</b><br>${job.date}`);
-                            histSuccess++;
-                        } else {
-                            histFail++;
                         }
-                        // 1.1 second delay to strictly respect API limits
-                        await new Promise(r => setTimeout(r, 1100)); 
+                        await new Promise(r => setTimeout(r, 1100)); // Rate limit safety
                     }
-                } else {
-                    console.log("No history file found.");
+                    // Save to local browser storage forever
+                    localStorage.setItem('br_historical_pins', JSON.stringify(pinArray));
+                } catch (e) {
+                    console.log("Error caching history");
                 }
-            } catch (error) {
-                // This catches JSON typos (like stray commas)
-                setStatus("JSON Error: Check history.json for typos!", "#ef4444");
-                await new Promise(r => setTimeout(r, 3000));
             }
 
-            // 2. Load Live Route
+            // 2. Load Live Route (Always fetched fresh so new bookings show up)
             try {
-                setStatus("Checking Live Calendar...", "#10b981");
+                setStatus("Syncing live route...", "#10b981");
                 const API_URL = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
                 const response = await fetch(API_URL);
                 const data = await response.json();
                 
                 if (data.busySlots) {
                     for (const event of data.busySlots) {
-                        setStatus(`Locating Live Job...`, "#10b981");
                         const coords = await geocodeAddress(event.location);
                         if (coords) {
                             const cleanTitle = event.summary.replace("Measure: ", "");
@@ -134,8 +131,8 @@
                 }
             } catch (error) { console.log("Live route load failed."); }
 
-            // Final Status
-            setStatus(`Map Complete! History: ${histSuccess} found, ${histFail} skipped.`, "#22c55e");
+            setStatus("Map Ready!", "#22c55e");
+            setTimeout(() => { document.getElementById('status-bar').style.display = 'none'; }, 3000);
         }
 
         loadData();
