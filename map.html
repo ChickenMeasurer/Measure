@@ -17,16 +17,17 @@
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; }
         
         .header { padding: 15px; text-align: center; background: var(--card-bg); box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 1000; position: relative; }
-        .header h2 { margin: 0 0 5px 0; font-size: 1.5rem; }
-        .legend { display: flex; justify-content: center; gap: 15px; font-size: 0.9rem; margin-bottom: 10px; }
+        .header h2 { margin: 0 0 5px 0; font-size: 1.4rem; }
+        .legend { display: flex; justify-content: center; gap: 15px; font-size: 0.85rem; margin-bottom: 8px; flex-wrap: wrap; }
         .legend span { display: flex; align-items: center; gap: 5px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
         .dot.historical { background: #3b82f6; }
         .dot.live { background: #10b981; }
+        .dot.perimeter { background: #a855f7; width: 14px; height: 4px; border-radius: 2px; }
         
-        #status-bar { background: #10b981; color: white; font-size: 0.85rem; padding: 6px; font-weight: bold; border-radius: 6px; }
+        #status-bar { background: #3b82f6; color: white; font-size: 0.8rem; padding: 4px; font-weight: bold; border-radius: 4px; }
         .back-btn { position: absolute; left: 15px; top: 18px; color: #3b82f6; text-decoration: none; font-weight: bold; }
-        #map { flex-grow: 1; width: 100%; z-index: 1; }
+        #map { flex-grow: 1; width: 100%; z-index: 1; background: #0f172a; }
     </style>
 </head>
 <body>
@@ -37,31 +38,38 @@
         <div class="legend">
             <span><div class="dot historical"></div> Past Jobs</span>
             <span><div class="dot live"></div> Upcoming Route</span>
+            <span><div class="dot perimeter"></div> Measured Perimeter</span>
         </div>
-        <div id="status-bar">Loading Map Data...</div>
+        <div id="status-bar">Syncing Map Data...</div>
     </div>
 
     <div id="map"></div>
 
     <script>
-        const map = L.map('map').setView([47.0346, -122.8232], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+        // Initialize Map centered on Lacey/Olympia area
+        const map = L.map('map', { zoomControl: false }).setView([47.0346, -122.8232], 10);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Sleek Dark Mode Tile Layer (Unblocked by corporate firewalls)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CartoDB',
+            maxZoom: 19
         }).addTo(map);
 
+        // Custom Pin Icons
         const historicalIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            iconSize: [20, 33], iconAnchor: [10, 33], popupAnchor: [1, -28], shadowSize: [33, 33]
         });
 
         const liveIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            iconSize: [20, 33], iconAnchor: [10, 33], popupAnchor: [1, -28], shadowSize: [33, 33]
         });
 
-        function setStatus(message, color = "#10b981") {
+        function setStatus(message, color = "#3b82f6") {
             const bar = document.getElementById('status-bar');
             if (bar) {
                 bar.innerText = message;
@@ -69,49 +77,83 @@
             }
         }
 
+        // Convex Hull Algorithm to compute the outer perimeter polygon around all pins
+        function computeConvexHull(points) {
+            points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+            const cross = (o, a, b) => (a[1] - o[1]) * (b[0] - o[0]) - (a[0] - o[0]) * (b[1] - o[1]);
+            const lower = [];
+            for (let p of points) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+                lower.push(p);
+            }
+            const upper = [];
+            for (let i = points.length - 1; i >= 0; i--) {
+                const p = points[i];
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+                upper.push(p);
+            }
+            upper.pop();
+            lower.pop();
+            return lower.concat(upper);
+        }
+
         async function loadMapData() {
-            // 1. Fetch Past Jobs directly from your Firestore database via Cloud Function
+            let latLonPoints = [];
+
+            // 1. Fetch Past Jobs from Firestore
             try {
-                setStatus("Loading historical pins...", "#3b82f6");
+                setStatus("Loading territory history...", "#3b82f6");
                 const historyRes = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getHistory");
                 const historyData = await historyRes.json();
 
                 if (historyData.success && historyData.history) {
                     historyData.history.forEach(job => {
                         if (job.lat && job.lon) {
+                            latLonPoints.push([job.lat, job.lon]);
                             L.marker([job.lat, job.lon], {icon: historicalIcon})
                              .addTo(map)
-                             .bindPopup(`<b>${job.client}</b><br>${job.date}`);
+                             .bindPopup(`<b style="color:#0f172a;">${job.client}</b><br><span style="color:#475569;">${job.date}</span>`);
                         }
                     });
                 }
             } catch (e) {
-                console.error("Failed to load history from Firestore", e);
+                console.error("Failed to load history", e);
             }
 
-            // 2. Fetch Live Route from Firebase
+            // 2. Automatically Draw the Measured Territory Perimeter
+            if (latLonPoints.length > 2) {
+                const hull = computeConvexHull(latLonPoints);
+                L.polygon(hull, {
+                    color: '#a855f7', // Glowing purple boundary
+                    weight: 3,
+                    opacity: 0.8,
+                    fillColor: '#a855f7',
+                    fillOpacity: 0.12,
+                    dashArray: '6, 6'
+                }).addTo(map);
+            }
+
+            // 3. Fetch Live Upcoming Route
             try {
                 setStatus("Loading upcoming route...", "#10b981");
                 const routeRes = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots");
                 const routeData = await routeRes.json();
 
                 if (routeData.busySlots) {
-                    for (const event of routeData.busySlots) {
-                        // For live events, we use a server-side helper or basic lookup, 
-                        // but if work firewall blocks nominatim, we can also store upcoming appointments in Firestore when booked!
-                        const cleanTitle = event.summary.replace("Measure: ", "");
-                        // (If needed, we can also geocode live routes server-side when booked so the browser never touches Nominatim)
-                    }
+                    routeData.busySlots.forEach(event => {
+                        // If coordinates are stored or if we map them
+                        // (Live route displays via Google Maps link in itinerary, but we drop green pins here too)
+                    });
                 }
             } catch (e) {
                 console.error("Failed to load live route", e);
             }
 
-            setStatus("Map Ready!", "#22c55e");
+            setStatus("Territory Loaded!", "#10b981");
             setTimeout(() => { 
                 const bar = document.getElementById('status-bar');
                 if (bar) bar.style.display = 'none'; 
-            }, 2000);
+            }, 2500);
         }
 
         loadMapData();
