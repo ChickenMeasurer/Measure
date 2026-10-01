@@ -30,8 +30,9 @@
         
         #map { flex-grow: 1; width: 100%; z-index: 1; background: #1e293b; }
 
-        /* CSS Dark Mode Filter for Standard Map Tiles (Watermark-Free) */
-        .leaflet-tile-pane { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
+        /* Custom styling for the layer switcher control box */
+        .leaflet-control-layers { background: #334155 !important; color: #f8fafc !important; border: none !important; border-radius: 8px !important; padding: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .leaflet-control-layers label { font-size: 0.85rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -53,11 +54,29 @@
         const map = L.map('map', { zoomControl: false }).setView([47.0346, -122.8232], 10);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Standard OpenStreetMap tiles (Completely free, unwatermarked, firewall-friendly via Firestore cache)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
+        // 1. Define the different map styles (Base Layers)
+        const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+        });
+
+        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri', maxZoom: 19
+        });
+
+        const terrainMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; OpenTopoMap', maxZoom: 17
+        });
+
+        // Set default view to Street map
+        streetMap.addTo(map);
+
+        // Add Layer Selector Toggle Box to the map
+        const baseMaps = {
+            "Streets": streetMap,
+            "Satellite": satelliteMap,
+            "Terrain": terrainMap
+        };
+        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
         const historicalIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
