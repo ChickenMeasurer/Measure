@@ -1,177 +1,558 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Route Map | B&R Flooring</title>
+    <title>Coverage Map | Drafting Services</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
+        /* --- Login Screen Theme Variables --- */
         :root {
-            --bg-light: #f1f5f9;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --border-color: #cbd5e1;
+            --primary: #3e2723;
+            --primary-light: #5d4037;
+            --surface: rgba(255, 255, 255, 0.95);
+            --border: #d7ccc8;
+            --text: #263238;
         }
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: var(--bg-light); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; }
-        
-        .header { padding: 15px; text-align: center; background: var(--card-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; position: relative; border-bottom: 1px solid var(--border-color); }
-        .header h2 { margin: 0 0 5px 0; font-size: 1.4rem; color: #0f172a; }
-        .legend { display: flex; justify-content: center; gap: 15px; font-size: 0.85rem; margin-bottom: 8px; flex-wrap: wrap; }
-        .legend span { display: flex; align-items: center; gap: 5px; color: #475569; font-weight: 500; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-        .dot.historical { background: #3b82f6; }
-        .dot.live { background: #10b981; }
-        .dot.perimeter { background: #9333ea; width: 14px; height: 4px; border-radius: 2px; }
-        
-        #status-bar { background: #3b82f6; color: white; font-size: 0.8rem; padding: 4px; font-weight: bold; border-radius: 4px; display: inline-block; }
-        .back-btn { position: absolute; left: 15px; top: 18px; color: #2563eb; text-decoration: none; font-weight: bold; }
-        
-        #map { flex-grow: 1; width: 100%; z-index: 1; background: #e2e8f0; }
 
-        /* Custom styling for the layer switcher control box */
-        .leaflet-control-layers { background: #ffffff !important; color: #1e293b !important; border: 1px solid var(--border-color) !important; border-radius: 8px !important; padding: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .leaflet-control-layers label { font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0b2246; }
+        
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: url('backgroundmain.png') no-repeat center center fixed; 
+            background-size: cover;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: url('textbackground.jpg') repeat;
+            background-color: #fdfbf7;
+            padding: 30px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            border-top: 8px solid var(--primary);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+            text-align: center;
+        }
+
+        .login-card h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 14px;
+            margin: 20px 0;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            box-sizing: border-box;
+        }
+
+        .login-card button {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+
+        .login-card button:hover {
+            background: var(--primary-light);
+        }
+
+        #login-error {
+            color: #c62828;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        /* --- MAP SCREEN (Hidden until login) --- */
+        #map-screen {
+            display: none;
+        }
+
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
+        }
+        
+        .map-label {
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-left: 5px solid #003399;
+            font-weight: bold;
+            color: #003399;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* --- Dashboard Container --- */
+        .dashboard-container {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .dashboard-toggle {
+            background: #003399;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+
+        .dashboard-toggle:hover {
+            background: #002266;
+        }
+
+        .dashboard-content {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            width: 265px;
+            margin-top: 10px;
+            border-top: 5px solid #003399;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-header {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            font-weight: bold;
+            color: #003399;
+            border-bottom: 1px solid #ddd;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .salesperson-select {
+            padding: 4px 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #003399;
+            border: 1px solid #003399;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .stats-list {
+            padding: 10px 15px;
+            margin: 0;
+            list-style: none;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.95em;
+            color: #263238;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+
+        .stats-item.total-homes {
+            border-bottom: 2px solid #003399;
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .stats-count {
+            font-weight: bold;
+            color: #b71c1c; 
+        }
+
+        /* --- Custom InfoWindow Snug Wrap CSS --- */
+        .gm-style .gm-style-iw-c {
+            padding: 10px !important;
+            max-height: none !important;
+        }
+        
+        .gm-style .gm-style-iw-d {
+            overflow: hidden !important;
+            max-height: none !important;
+        }
+
+        .popup-container {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 2px 5px 0px 5px;
+            color: #263238;
+            min-width: 180px;
+        }
+        
+        .popup-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #003399;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .popup-divider {
+            border: 0; 
+            border-top: 2px solid #b71c1c;
+            margin: 6px 0;
+            opacity: 0.8;
+        }
+
+        .popup-details {
+            font-size: 0.95em;
+            color: #b71c1c;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <a href="index.html" class="back-btn">&#8592; Back</a>
-        <h2>🗺️ Territory Map</h2>
-        <div class="legend">
-            <span><div class="dot historical"></div> Past Jobs</span>
-            <span><div class="dot live"></div> Upcoming Route</span>
-            <span><div class="dot perimeter"></div> Measured Perimeter</span>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>Authorized Access</h2>
+            <p style="color: var(--primary-light); font-size: 0.9em; margin-bottom: 5px;">Enter the passcode to view the route map.</p>
+            <form id="login-form">
+                <input type="password" id="passcode" placeholder="••••" required autofocus>
+                <div id="login-error">Incorrect Passcode</div>
+                <button type="submit">Unlock Map</button>
+            </form>
         </div>
-        <div id="status-bar">Syncing Map Data...</div>
     </div>
 
-    <div id="map"></div>
+    <!-- MAIN MAP SCREEN -->
+    <div id="map-screen">
+        <div class="map-label">📐 Measurement Coverage</div>
+        
+        <div class="dashboard-container">
+            <button class="dashboard-toggle" id="toggleBtn" onclick="toggleDashboard()">📊 View Stats</button>
+            <div class="dashboard-content" id="dbContent">
+                <div class="dashboard-header">
+                    <span>Stats For:</span>
+                    <select class="salesperson-select" id="salesFilter" onchange="filterStats()">
+                        <option value="TOTAL">Total</option>
+                        <option value="AS">AS</option>
+                        <option value="BC">BC</option>
+                        <option value="CL">CL</option>
+                        <option value="DF">DF</option>
+                    </select>
+                </div>
+                <ul class="stats-list">
+                    <li class="stats-item total-homes">Total Homes Visited <span class="stats-count" id="count-total-visits">0</span></li>
+                    <li class="stats-item">Whole Houses <span class="stats-count" id="count-house">0</span></li>
+                    <li class="stats-item">Kitchens <span class="stats-count" id="count-kitchen">0</span></li>
+                    <li class="stats-item">Bedrooms <span class="stats-count" id="count-bedroom">0</span></li>
+                    <li class="stats-item">Bathrooms <span class="stats-count" id="count-bathroom">0</span></li>
+                    <li class="stats-item">Living Rooms <span class="stats-count" id="count-living">0</span></li>
+                    <li class="stats-item">Hallways <span class="stats-count" id="count-hallway">0</span></li>
+                    <li class="stats-item">Closets <span class="stats-count" id="count-closet">0</span></li>
+                    <li class="stats-item">Staircases <span class="stats-count" id="count-stairs">0</span></li>
+                </ul>
+            </div>
+        </div>
 
-    <script>
-        const map = L.map('map', { zoomControl: false }).setView([47.0346, -122.8232], 10);
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        <div id="map"></div>
+    </div>
 
-        // Enterprise-grade Esri tile layers (Unblocked by corporate firewalls & zero API keys needed)
-        const streetMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri', maxZoom: 19
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- 1. Passcode Logic ---
+        const loginForm = document.getElementById('login-form');
+        const passcodeBtn = document.getElementById('passcode');
+        const loginError = document.getElementById('login-error');
+        
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (passcodeBtn.value === "1967") {
+                document.getElementById('login-screen').style.display = "none";
+                document.getElementById('map-screen').style.display = "block";
+                
+                initializeMap(); 
+            } else {
+                loginError.style.display = "block";
+                passcodeBtn.value = "";
+                passcodeBtn.focus();
+            }
         });
 
-        const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri', maxZoom: 19
-        });
+        // --- 2. Map & Database Logic ---
+        let map;
+        let infoWindow;
+        let allSubmissionsData = []; 
+        let db;
 
-        const terrainMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri', maxZoom: 19
-        });
-
-        // Default to Street view
-        streetMap.addTo(map);
-
-        const baseMaps = {
-            "Streets": streetMap,
-            "Satellite": satelliteMap,
-            "Terrain": terrainMap
+        window.toggleDashboard = function() {
+            const content = document.getElementById("dbContent");
+            const btn = document.getElementById("toggleBtn");
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                btn.innerText = "📊 View Stats";
+            } else {
+                content.style.display = "block";
+                btn.innerText = "✖ Close Stats";
+            }
         };
-        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
-        function setStatus(message, color = "#2563eb") {
-            const bar = document.getElementById('status-bar');
-            if (bar) {
-                bar.innerText = message;
-                bar.style.background = color;
-            }
+        function calculateStatsForFilter(targetSalesperson) {
+            const counts = { visits: 0, house: 0, kitchen: 0, bedroom: 0, bathroom: 0, living: 0, hallway: 0, closet: 0, stairs: 0 };
+
+            allSubmissionsData.forEach(item => {
+                if (targetSalesperson !== "TOTAL" && item.salesperson !== targetSalesperson) {
+                    return; 
+                }
+
+                counts.visits++; 
+
+                if (item.details) {
+                    const txt = item.details.toLowerCase();
+                    if (txt.includes("whole house") || txt.includes("entire home") || txt.includes("full house")) counts.house++;
+                    if (txt.includes("kitchen") || txt.includes("counter") || txt.includes("backsplash")) counts.kitchen++;
+                    if (txt.includes("bedroom") || txt.includes("bed room") || txt.includes("primary bed")) counts.bedroom++;
+                    if (txt.includes("bath") || txt.includes("restroom") || txt.includes("powder room")) counts.bathroom++;
+                    if (txt.includes("living") || txt.includes("family room") || txt.includes("great room") || txt.includes("den")) counts.living++;
+                    if (txt.includes("hall") || txt.includes("entryway") || txt.includes("foyer")) counts.hallway++;
+                    if (txt.includes("closet") || txt.includes("wic")) counts.closet++;
+                    if (txt.includes("stair") || txt.includes("steps") || txt.includes("flight")) counts.stairs++;
+                }
+            });
+
+            document.getElementById("count-total-visits").innerText = counts.visits;
+            document.getElementById("count-house").innerText = counts.house;
+            document.getElementById("count-kitchen").innerText = counts.kitchen;
+            document.getElementById("count-bedroom").innerText = counts.bedroom;
+            document.getElementById("count-bathroom").innerText = counts.bathroom;
+            document.getElementById("count-living").innerText = counts.living;
+            document.getElementById("count-hallway").innerText = counts.hallway;
+            document.getElementById("count-closet").innerText = counts.closet;
+            document.getElementById("count-stairs").innerText = counts.stairs;
         }
 
-        function computeConvexHull(points) {
-            points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-            const cross = (o, a, b) => (a[1] - o[1]) * (b[0] - o[0]) - (a[0] - o[0]) * (b[1] - o[1]);
-            const lower = [];
-            for (let p of points) {
-                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
-                lower.push(p);
-            }
-            const upper = [];
-            for (let i = points.length - 1; i >= 0; i--) {
-                const p = points[i];
-                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
-                upper.push(p);
-            }
-            upper.pop();
-            lower.pop();
-            return lower.concat(upper);
-        }
+        window.filterStats = function() {
+            const selectedFilter = document.getElementById("salesFilter").value;
+            calculateStatsForFilter(selectedFilter);
+        };
 
-        async function loadMapData() {
-            let latLonPoints = [];
-
-            // 1. Load Historical Jobs from Firestore
+        async function loadCoverage() {
             try {
-                setStatus("Loading territory history...", "#2563eb");
-                const historyRes = await fetch(`https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getHistory?nocache=${Date.now()}`);
-                const historyData = await historyRes.json();
+                const points = []; 
+                const bounds = new google.maps.LatLngBounds();
+                let hasValidPoints = false;
+                allSubmissionsData = []; 
 
-                if (historyData.success && historyData.history) {
-                    historyData.history.forEach(job => {
-                        if (job.lat && job.lon) {
-                            latLonPoints.push([job.lat, job.lon]);
-                            
-                            // Firewall-proof Vector Circle Marker (Blue)
-                            L.circleMarker([job.lat, job.lon], {
-                                radius: 7,
-                                fillColor: '#3b82f6',
-                                color: '#ffffff',
-                                weight: 2,
-                                opacity: 1,
-                                fillOpacity: 0.9
-                            }).addTo(map)
-                              .bindPopup(`<b>${job.client}</b><br>${job.date}<br><small>${job.address}</small>`);
+                // 1. Fetch from live 'submissions' collection
+                const subSnapshot = await getDocs(collection(db, "submissions"));
+                subSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allSubmissionsData.push({
+                        salesperson: data.salesperson || null, 
+                        details: data.details || ""
+                    });
+                    
+                    if (data.location && data.location.lat && data.location.lon) {
+                        const lat = parseFloat(data.location.lat);
+                        const lng = parseFloat(data.location.lon);
+                        const position = { lat: lat, lng: lng };
+                        
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: data.name || 'Client'
+                        });
+
+                        marker.addListener("click", () => {
+                            infoWindow.setContent(`
+                                <div class="popup-container">
+                                    <div class="popup-title">${data.name || 'Client'}</div>
+                                    <hr class="popup-divider">
+                                    <div class="popup-details">
+                                        <strong>Project Focus:</strong><br>
+                                        ${data.details || 'No specific project notes.'}
+                                    </div>
+                                </div>
+                            `);
+                            infoWindow.open(map, marker);
+                        });
+
+                        points.push(turf.point([lng, lat])); 
+                        bounds.extend(position);
+                        hasValidPoints = true;
+                    }
+                });
+
+                // 2. Fetch from seeded 'history' collection
+                const historySnapshot = await getDocs(collection(db, "history"));
+                historySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let clientName = data.client || 'Client';
+                    let salesperson = null;
+                    
+                    // Extract salesperson tags if present in client name (e.g. (BC), (AS), (CL), (DF))
+                    const match = clientName.match(/\((AS\vert{}BC\vert{}CL\vert{}DF)\)/i);
+                    if (match) {
+                        salesperson = match[1].toUpperCase();
+                    }
+
+                    allSubmissionsData.push({
+                        salesperson: salesperson,
+                        details: `Date: ${data.date || 'N/A'}<br>Address: ${data.address || 'N/A'}`
+                    });
+
+                    if (data.lat && data.lon) {
+                        const lat = parseFloat(data.lat);
+                        const lng = parseFloat(data.lon);
+                        const position = { lat: lat, lng: lng };
+
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: clientName
+                        });
+
+                        marker.addListener("click", () => {
+                            infoWindow.setContent(`
+                                <div class="popup-container">
+                                    <div class="popup-title">${clientName}</div>
+                                    <hr class="popup-divider">
+                                    <div class="popup-details">
+                                        <strong>Date:</strong> ${data.date || 'N/A'}<br>
+                                        <strong>Address:</strong> ${data.address || 'N/A'}
+                                    </div>
+                                </div>
+                            `);
+                            infoWindow.open(map, marker);
+                        });
+
+                        points.push(turf.point([lng, lat]));
+                        bounds.extend(position);
+                        hasValidPoints = true;
+                    }
+                });
+
+                calculateStatsForFilter("TOTAL");
+
+                map.addListener("click", () => {
+                    infoWindow.close();
+                });
+
+                if (points.length >= 3) {
+                    const featureCollection = turf.featureCollection(points);
+                    const hull = turf.convex(featureCollection);
+
+                    if (hull && hull.geometry && hull.geometry.coordinates) {
+                        const pathCoords = hull.geometry.coordinates[0].map(coord => {
+                            return { lat: coord[1], lng: coord[0] };
+                        });
+
+                        const coveragePolygon = new google.maps.Polygon({
+                            paths: pathCoords,
+                            strokeColor: "#003399",   
+                            strokeOpacity: 0.8,
+                            strokeWeight: 3,
+                            fillColor: "#003399",     
+                            fillOpacity: 0.12
+                        });
+
+                        coveragePolygon.setMap(map);
+                    }
+                }
+
+                if (hasValidPoints) {
+                    map.fitBounds(bounds);
+                    
+                    const listener = google.maps.event.addListener(map, "bounds_changed", function() {
+                        if (this.getZoom() > 14) {
+                            this.setZoom(14); 
                         }
+                        google.maps.event.removeListener(listener);
                     });
                 }
-            } catch (e) {
-                console.error("Failed to load history", e);
+            } catch (err) {
+                console.error("Data could not be retrieved:", err);
             }
-
-            // 2. Draw Territory Perimeter
-            if (latLonPoints.length > 2) {
-                const hull = computeConvexHull(latLonPoints);
-                L.polygon(hull, {
-                    color: '#9333ea',
-                    weight: 3,
-                    opacity: 0.8,
-                    fillColor: '#a855f7',
-                    fillOpacity: 0.1,
-                    dashArray: '6, 6'
-                }).addTo(map);
-            }
-
-            // 3. Load Live Route Pins
-            try {
-                const routeRes = await fetch(`https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots?nocache=${Date.now()}`);
-                const routeData = await routeRes.json();
-
-                if (routeData.busySlots) {
-                    routeData.busySlots.forEach(event => {
-                        // If live route has location data, we can map it too. 
-                        // (Vector markers ensure live green pins load instantly without firewall blocks)
-                    });
-                }
-            } catch (e) {
-                console.error("Failed to load live route", e);
-            }
-
-            setStatus("Territory Loaded!", "#16a34a");
-            setTimeout(() => { 
-                const bar = document.getElementById('status-bar');
-                if (bar) bar.style.display = 'none'; 
-            }, 2500);
         }
 
-        loadMapData();
+        function initializeMap() {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBIJQhVB5X9WLC2rwnhYX3otZito5vg1Pk",
+                authDomain: "chickenmeasurer-37304.firebaseapp.com",
+                projectId: "chickenmeasurer-37304",
+                storageBucket: "chickenmeasurer-37304.firebasestorage.app",
+                messagingSenderId: "871581751225",
+                appId: "1:871581751225:web:bec4978ba235c1c4418868"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+
+            const mapOptions = {
+                center: { lat: 47.0379, lng: -122.9007 },
+                zoom: 10,
+                mapTypeId: google.maps.MapTypeId.ROADMAP, 
+                mapTypeControl: true, 
+                mapTypeControlOptions: {
+                    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                    position: google.maps.ControlPosition.TOP_RIGHT
+                },
+                styles: [
+                    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] } 
+                ]
+            };
+
+            map = new google.maps.Map(document.getElementById("map"), mapOptions);
+            infoWindow = new google.maps.InfoWindow();
+
+            loadCoverage();
+        }
     </script>
 </body>
 </html>
