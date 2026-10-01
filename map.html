@@ -103,7 +103,7 @@
 
             try {
                 setStatus("Loading territory history...", "#3b82f6");
-                const historyRes = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getHistory");
+                const historyRes = await fetch(`https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getHistory?nocache=${Date.now()}`);
                 const historyData = await historyRes.json();
 
                 if (historyData.success && historyData.history) {
