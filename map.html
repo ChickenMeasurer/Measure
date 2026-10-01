@@ -27,7 +27,11 @@
         
         #status-bar { background: #3b82f6; color: white; font-size: 0.8rem; padding: 4px; font-weight: bold; border-radius: 4px; }
         .back-btn { position: absolute; left: 15px; top: 18px; color: #3b82f6; text-decoration: none; font-weight: bold; }
-        #map { flex-grow: 1; width: 100%; z-index: 1; background: #0f172a; }
+        
+        #map { flex-grow: 1; width: 100%; z-index: 1; background: #1e293b; }
+
+        /* CSS Dark Mode Filter for Standard Map Tiles (Watermark-Free) */
+        .leaflet-tile-pane { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
     </style>
 </head>
 <body>
@@ -46,17 +50,15 @@
     <div id="map"></div>
 
     <script>
-        // Initialize Map centered on Lacey/Olympia area
         const map = L.map('map', { zoomControl: false }).setView([47.0346, -122.8232], 10);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Sleek Dark Mode Tile Layer (Unblocked by corporate firewalls)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap & CartoDB',
+        // Standard OpenStreetMap tiles (Completely free, unwatermarked, firewall-friendly via Firestore cache)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
 
-        // Custom Pin Icons
         const historicalIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -77,7 +79,6 @@
             }
         }
 
-        // Convex Hull Algorithm to compute the outer perimeter polygon around all pins
         function computeConvexHull(points) {
             points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
             const cross = (o, a, b) => (a[1] - o[1]) * (b[0] - o[0]) - (a[0] - o[0]) * (b[1] - o[1]);
@@ -100,7 +101,6 @@
         async function loadMapData() {
             let latLonPoints = [];
 
-            // 1. Fetch Past Jobs from Firestore
             try {
                 setStatus("Loading territory history...", "#3b82f6");
                 const historyRes = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getHistory");
@@ -112,7 +112,7 @@
                             latLonPoints.push([job.lat, job.lon]);
                             L.marker([job.lat, job.lon], {icon: historicalIcon})
                              .addTo(map)
-                             .bindPopup(`<b style="color:#0f172a;">${job.client}</b><br><span style="color:#475569;">${job.date}</span>`);
+                             .bindPopup(`<b>${job.client}</b><br>${job.date}<br><small>${job.address}</small>`);
                         }
                     });
                 }
@@ -120,33 +120,16 @@
                 console.error("Failed to load history", e);
             }
 
-            // 2. Automatically Draw the Measured Territory Perimeter
             if (latLonPoints.length > 2) {
                 const hull = computeConvexHull(latLonPoints);
                 L.polygon(hull, {
-                    color: '#a855f7', // Glowing purple boundary
+                    color: '#a855f7',
                     weight: 3,
                     opacity: 0.8,
                     fillColor: '#a855f7',
                     fillOpacity: 0.12,
                     dashArray: '6, 6'
                 }).addTo(map);
-            }
-
-            // 3. Fetch Live Upcoming Route
-            try {
-                setStatus("Loading upcoming route...", "#10b981");
-                const routeRes = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots");
-                const routeData = await routeRes.json();
-
-                if (routeData.busySlots) {
-                    routeData.busySlots.forEach(event => {
-                        // If coordinates are stored or if we map them
-                        // (Live route displays via Google Maps link in itinerary, but we drop green pins here too)
-                    });
-                }
-            } catch (e) {
-                console.error("Failed to load live route", e);
             }
 
             setStatus("Territory Loaded!", "#10b981");
