@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Route Optimizer | B&R Flooring</title>
+    
+    <!-- Turf.js for fast geographic distance math -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #1e293b;
+            --card-bg: #334155;
+            --text-main: #f8fafc;
+            --accent: #3b82f6;
+            --success: #10b981;
+        }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: var(--bg-dark); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        
+        .header { padding: 15px; text-align: center; background: var(--card-bg); box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: relative; }
+        .header h2 { margin: 0 0 5px 0; font-size: 1.4rem; }
+        .back-btn { position: absolute; left: 15px; top: 18px; color: var(--accent); text-decoration: none; font-weight: bold; }
+
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-bottom: 20px; }
+        .card h3 { margin-top: 0; font-size: 1.1rem; color: #94a3b8; border-bottom: 1px solid #475569; padding-bottom: 8px; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 0.95rem; }
+        
+        button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #475569; margin-top: 8px; }
+
+        .result-item { background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid var(--success); }
+        .result-item h4 { margin: 0 0 5px 0; color: #f8fafc; }
+        .result-meta { font-size: 0.85rem; color: #94a3b8; }
+        .recommendation { color: var(--success); font-weight: bold; margin-top: 6px; display: block; }
+
+        #status { text-align: center; font-size: 0.9rem; color: #f59e0b; margin-bottom: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn">&#8592; Back</a>
+        <h2>⛽ Gas & Time Optimizer</h2>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h3>1. Enter New Customers</h3>
+            <div id="customer-inputs">
+                <div class="input-group">
+                    <input type="text" placeholder="Client Name" class="client-name">
+                    <input type="text" placeholder="Street Address, City" class="client-address">
+                </div>
+            </div>
+            <button class="secondary" onclick="addInputRow()">+ Add Another Customer</button>
+            <br><br>
+            <button onclick="optimizeRoutes()">Find Most Efficient Schedule</button>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="card" id="results-card" style="display: none;">
+            <h3>2. Optimized Schedule Recommendations</h3>
+            <div id="results-container"></div>
+        </div>
+    </div>
+
+    <script>
+        function addInputRow() {
+            const container = document.getElementById('customer-inputs');
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.innerHTML = `
+                <input type="text" placeholder="Client Name" class="client-name">
+                <input type="text" placeholder="Street Address, City" class="client-address">
+            `;
+            container.appendChild(div);
+        }
+
+        async function geocode(address) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&email=chickenmeasurer@outlook.com`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data && data.length > 0) return [parseFloat(data[0].lon), parseFloat(data[0].lat)]; // Turf uses [lng, lat]
+                return null;
+            } catch (e) { return null; }
+        }
+
+        async function optimizeRoutes() {
+            const status = document.getElementById('status');
+            const resultsCard = document.getElementById('results-card');
+            const resultsContainer = document.getElementById('results-container');
+            
+            const names = document.querySelectorAll('.client-name');
+            const addresses = document.querySelectorAll('.client-address');
+            
+            let newCustomers = [];
+            for (let i = 0; i < names.length; i++) {
+                if (names[i].value.trim() && addresses[i].value.trim()) {
+                    newCustomers.push({ name: names[i].value.trim(), address: addresses[i].value.trim() });
+                }
+            }
+
+            if (newCustomers.length === 0) {
+                alert("Please enter at least one client name and address.");
+                return;
+            }
+
+            status.innerText = "Syncing upcoming calendar routes...";
+            resultsContainer.innerHTML = "";
+
+            // 1. Fetch upcoming scheduled routes from Firebase
+            let scheduledDays = {}; // { "YYYY-MM-DD": [ [lng, lat], [lng, lat] ] }
+            try {
+                const res = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots");
+                const data = await res.json();
+                
+                if (data.busySlots) {
+                    for (const event of data.busySlots) {
+                        const dateStr = event.start.split('T')[0];
+                        if (!scheduledDays[dateStr]) scheduledDays[dateStr] = [];
+                        
+                        // Geocode existing route location if not generic
+                        if (event.location && !event.location.includes("United States")) {
+                            const coords = await geocode(event.location);
+                            if (coords) scheduledDays[dateStr].push(coords);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log("Could not load live routes, analyzing based on proximity alone.");
+            }
+
+            status.innerText = "Calculating most gas-efficient days...";
+
+            // 2. Geocode new customers and find closest day cluster
+            for (const cust of newCustomers) {
+                const custCoords = await geocode(cust.address);
+                if (!custCoords) {
+                    renderResult(cust.name, cust.address, "Could not map address.", "Check address spelling.");
+                    continue;
+                }
+
+                let bestDay = "Any open day (No active routes nearby)";
+                let minDistance = Infinity;
+
+                // Compare new customer to each day's scheduled stops
+                for (const [day, coordsList] of Object.entries(scheduledDays)) {
+                    if (coordsList.length === 0) continue;
+
+                    // Calculate average distance to stops on this day
+                    let totalDist = 0;
+                    coordsList.instances = coordsList.forEach(existingCoord => {
+                        const from = turf.point(custCoords);
+                        const to = turf.point(existingCoord);
+                        totalDist += turf.distance(from, to, {units: 'miles'});
+                    });
+                    const avgDist = totalDist / coordsList.length;
+
+                    if (avgDist < minDistance) {
+                        minDistance = avgDist;
+                        bestDay = day;
+                    }
+                }
+
+                let recommendation = bestDay === "Any open day (No active routes nearby)" 
+                    ? `Recommended: Schedule anytime (Low congestion)` 
+                    : `Recommended Day: <b>${bestDay}</b> (Closest to your existing stops)`;
+
+                renderResult(cust.name, cust.address, minDistance === Infinity ? "N/A" : `${minDistance.toFixed(1)} miles from closest route`, recommendation);
+                await new Promise(r => setTimeout(r, 1100)); // Rate limit safety
+            }
+
+            status.innerText = "";
+            resultsCard.style.display = "block";
+        }
+
+        function renderResult(name, address, distanceText, recommendation) {
+            const container = document.getElementById('results-container');
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <h4>${name}</h4>
+                <div class="result-meta">${address} | Approx. Proximity: ${distanceText}</div>
+                <span class="recommendation">${recommendation}</span>
+            `;
+            container.appendChild(div);
+        }
+    </script>
+</body>
+</html>
