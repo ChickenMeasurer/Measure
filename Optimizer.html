@@ -7,6 +7,8 @@
     
     <!-- Turf.js for fast geographic distance math -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <!-- Google Maps API (Trusted by work firewalls) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhbo0ldo8ZKcgMFprwszG720RykvvWO7Q"></script>
 
     <style>
         :root {
@@ -83,14 +85,23 @@
             container.appendChild(div);
         }
 
-        async function geocode(address) {
-            try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&email=chickenmeasurer@outlook.com`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data && data.length > 0) return [parseFloat(data[0].lon), parseFloat(data[0].lat)]; // Turf uses [lng, lat]
-                return null;
-            } catch (e) { return null; }
+        // Firewall-proof Geocoder using Google's native services
+        function geocode(address) {
+            return new Promise((resolve) => {
+                if (!window.google || !google.maps || !google.maps.Geocoder) {
+                    resolve(null);
+                    return;
+                }
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: address }, (results, status) => {
+                    if (status === 'OK' && results && results[0]) {
+                        const loc = results[0].geometry.location;
+                        resolve([loc.lng(), loc.lat()]); // Turf format: [lng, lat]
+                    } else {
+                        resolve(null);
+                    }
+                });
+            });
         }
 
         async function optimizeRoutes() {
@@ -117,7 +128,7 @@
             resultsContainer.innerHTML = "";
 
             // 1. Fetch upcoming scheduled routes from Firebase
-            let scheduledDays = {}; // { "YYYY-MM-DD": [ [lng, lat], [lng, lat] ] }
+            let scheduledDays = {}; 
             try {
                 const res = await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots");
                 const data = await res.json();
@@ -127,7 +138,6 @@
                         const dateStr = event.start.split('T')[0];
                         if (!scheduledDays[dateStr]) scheduledDays[dateStr] = [];
                         
-                        // Geocode existing route location if not generic
                         if (event.location && !event.location.includes("United States")) {
                             const coords = await geocode(event.location);
                             if (coords) scheduledDays[dateStr].push(coords);
@@ -151,13 +161,11 @@
                 let bestDay = "Any open day (No active routes nearby)";
                 let minDistance = Infinity;
 
-                // Compare new customer to each day's scheduled stops
                 for (const [day, coordsList] of Object.entries(scheduledDays)) {
                     if (coordsList.length === 0) continue;
 
-                    // Calculate average distance to stops on this day
                     let totalDist = 0;
-                    coordsList.instances = coordsList.forEach(existingCoord => {
+                    coordsList.forEach(existingCoord => {
                         const from = turf.point(custCoords);
                         const to = turf.point(existingCoord);
                         totalDist += turf.distance(from, to, {units: 'miles'});
@@ -175,7 +183,6 @@
                     : `Recommended Day: <b>${bestDay}</b> (Closest to your existing stops)`;
 
                 renderResult(cust.name, cust.address, minDistance === Infinity ? "N/A" : `${minDistance.toFixed(1)} miles from closest route`, recommendation);
-                await new Promise(r => setTimeout(r, 1100)); // Rate limit safety
             }
 
             status.innerText = "";
