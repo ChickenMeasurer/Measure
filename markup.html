@@ -1,690 +1,302 @@
-html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloorMark Pro - PDF Flooring Markup Tool</title>
-    
-    <!-- PDF.js for rendering PDFs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    
-    <!-- Fabric.js for interactive canvas drawing -->
+    <title>FloorMark Pro - Flooring PDF Markup Tool</title>
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Fabric.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-
+    <!-- jsPDF Library for Scaled PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* Modern Dark/Light Theme Styling */
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --secondary: #10b981;
-            --secondary-hover: #059669;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --bg-sidebar: #0f172a;
-            --sidebar-card: #1e293b;
-            --sidebar-text: #f8fafc;
-            --sidebar-muted: #94a3b8;
-            --border-color: #334155;
-            --bg-canvas: #cbd5e1;
-            --accent-blue: #38bdf8;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0f172a;
-            background-color: var(--bg-canvas);
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-        }
-
-        /* Layout Architecture */
-        .sidebar {
-            width: 320px;
-            min-width: 320px;
-            background-color: var(--bg-sidebar);
-            color: var(--sidebar-text);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
-            z-index: 20;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            background-color: #020617;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sidebar-header h1 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .scale-badge {
-            display: inline-block;
-            background-color: var(--primary);
-            color: #ffffff;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 12px;
-            margin-top: 6px;
-        }
-
-        .sidebar-content {
-            padding: 18px;
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .section-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: var(--sidebar-muted);
-            margin-bottom: 8px;
-            letter-spacing: 0.08em;
-        }
-
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        /* Interactive Buttons */
-        .btn {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--sidebar-card);
-            color: var(--sidebar-text);
-            font-size: 0.88rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease-in-out;
-            text-align: left;
-            gap: 10px;
-        }
-
-        .btn:hover {
-            background-color: #334155;
-            border-color: #475569;
-        }
-
-        .btn.active {
-            background-color: var(--primary);
-            border-color: #60a5fa;
-            color: #ffffff;
-            box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
-        }
-
-        .key-badge {
-            margin-left: auto;
-            background-color: #0f172a;
-            border: 1px solid var(--border-color);
-            color: var(--accent-blue);
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            text-transform: uppercase;
-        }
-
-        .btn.active .key-badge {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
-            color: #ffffff;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            justify-content: center;
-            font-weight: 600;
-        }
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-success {
-            background-color: var(--secondary);
-            color: #ffffff;
-            border-color: var(--secondary);
-            justify-content: center;
-            font-weight: 600;
-        }
-        .btn-success:hover {
-            background-color: var(--secondary-hover);
-        }
-
-        .btn-danger-outline {
-            color: #fca5a5;
-            border-color: #7f1d1d;
-            background-color: #450a0a;
-            justify-content: center;
-        }
-        .btn-danger-outline:hover {
-            background-color: #7f1d1d;
-            color: #ffffff;
-        }
-
-        .sub-toggle {
-            font-size: 0.8rem;
-            background-color: #0f172a;
-            border-color: var(--border-color);
-            padding: 8px 12px;
-            margin-top: 4px;
-        }
-
-        /* Tool Options Sub-panel */
-        .tool-options {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #020617;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            margin-top: 4px;
-            font-size: 0.8rem;
-        }
-
-        .tool-options label {
-            color: var(--sidebar-muted);
-        }
-
-        .tool-options input[type="color"] {
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            cursor: pointer;
-            background: transparent;
-        }
-
-        .tool-options input[type="range"] {
-            width: 80px;
-        }
-
-        /* Main Workspace */
-        .main-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            height: 100vh;
-        }
-
-        .top-bar {
-            height: 42px;
-            background-color: #0f172a;
-            color: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            font-size: 0.85rem;
-            border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-
-        .status-pill {
-            background-color: #1e293b;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            color: var(--accent-blue);
-            font-weight: 500;
-        }
-
-        .canvas-wrapper {
-            flex-grow: 1;
-            overflow: auto;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 30px;
-            position: relative;
-        }
-
-        .canvas-container {
-            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
-            background-color: #ffffff;
-            border-radius: 4px;
-        }
-
-        .empty-state {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #475569;
-            pointer-events: none;
-        }
-
-        .empty-state h2 {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f3f4f6; color: #1f2937; overflow: hidden; }
+        header { background-color: #1e293b; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header h1 { font-size: 1.25rem; font-weight: 600; }
+        header span { font-size: 0.875rem; color: #94a3b8; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 320px; background-color: #ffffff; border-right: 1px solid #e5e7eb; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .section-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px; background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: #374151; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { background-color: #f3f4f6; border-color: #9ca3af; }
+        .btn.active { background-color: #eff6ff; border-color: #3b82f6; color: #1d4ed8; font-weight: 600; }
+        .btn-upload { background-color: #059669; color: white; border: none; justify-content: center; }
+        .btn-upload:hover { background-color: #047857; }
+        .btn-export-pdf { background-color: #2563eb; color: white; border: none; justify-content: center; }
+        .btn-export-pdf:hover { background-color: #1d4ed8; }
+        .btn-clear { background-color: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; justify-content: center; }
+        .btn-clear:hover { background-color: #fecaca; }
+        .kbd-badge { background-color: #e5e7eb; color: #4b5563; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid #d1d5db; }
+        .btn.active .kbd-badge { background-color: #bfdbfe; color: #1e40af; border-color: #93c5fd; }
+        .viewport { flex: 1; background-color: #4b5563; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; padding: 20px; }
+        .canvas-container-wrapper { position: relative; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); background-color: white; }
+        #pdf-canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        #fabric-canvas { position: absolute; top: 0; left: 0; z-index: 2; }
+        .instruction-bar { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background-color: rgba(17, 24, 39, 0.85); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; pointer-events: none; z-index: 10; }
+        #file-input { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Control Panel -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h1>📐 FloorMark Pro</h1>
-            <span class="scale-badge">Scale: 1/4" = 1' (18px = 1ft)</span>
-        </div>
+    <header>
+        <h1>FloorMark Pro</h1>
+        <span>Scale: 1/4" = 1' (18px = 1ft)</span>
+    </header>
 
-        <div class="sidebar-content">
-            <!-- Upload PDF -->
-            <div>
-                <label class="btn btn-success">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Upload PDF Floorplan
-                    <input type="file" id="pdf-upload" accept="application/pdf">
-                </label>
-            </div>
+    <div class="main-container">
+        <div class="sidebar">
+            <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">
+                📄 Upload PDF Floorplan
+            </button>
+            <input type="file" id="file-input" accept="application/pdf">
 
-            <!-- Standard Tools -->
             <div>
                 <div class="section-title">Standard Tools</div>
-                <div class="btn-group">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button class="btn active" id="tool-select" onclick="setTool('select')">
                         <span>👆 Select / Move</span>
-                        <span class="key-badge">ESC</span>
+                        <span class="kbd-badge">Esc</span>
                     </button>
                     <button class="btn" id="tool-pen" onclick="setTool('pen')">
-                        <span>✏️ Freehand Pen</span>
+                        <span>✏️ Pen Tool</span>
                     </button>
-                    
-                    <!-- Pen Options Subpanel -->
-                    <div class="tool-options" id="pen-options" style="display: none;">
-                        <label>Color:</label>
-                        <input type="color" id="pen-color" value="#ef4444" onchange="updatePenSettings()">
-                        <label>Size:</label>
-                        <input type="range" id="pen-width" min="1" max="10" value="3" onchange="updatePenSettings()">
-                    </div>
-
                     <button class="btn" id="tool-text" onclick="setTool('text')">
-                        <span>🔤 Add Text Note</span>
+                        <span>🔤 Add Text</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Measurement Tools -->
             <div>
                 <div class="section-title">Measurement Tools</div>
-                <div class="btn-group">
-                    <button class="btn" id="tool-area" onclick="setTool('area')">
-                        <span>🔳 Sq Ft Box (Rectangle)</span>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn" id="tool-sqft" onclick="setTool('sqft')">
+                        <span>📦 SqFt Box</span>
                     </button>
                     <button class="btn" id="tool-poly" onclick="setTool('poly')">
                         <span>📐 Custom Area (L-Shape)</span>
-                        <span class="key-badge">A</span>
+                        <span class="kbd-badge">A</span>
                     </button>
                     <button class="btn" id="tool-carpet" onclick="setTool('carpet')">
                         <span>✂️ 12' Carpet Cut</span>
-                        <span class="key-badge">C</span>
+                        <span class="kbd-badge">C</span>
                     </button>
-                    <button class="btn sub-toggle" id="btn-carpet-toggle" onclick="toggleCarpetOrientation()">
-                        <span id="carpet-lock-label">🔄 Lock: 12' Height</span>
-                        <span class="key-badge">W</span>
+                    <button class="btn" id="tool-carpet-lock" onclick="toggleCarpetLock()">
+                        <span id="carpet-lock-label">🔒 Lock: 12' Width</span>
+                        <span class="kbd-badge">W</span>
                     </button>
                 </div>
             </div>
 
-            <div style="flex-grow: 1;"></div>
-
-            <!-- Actions -->
-            <div>
-                <div class="section-title">Actions</div>
-                <div class="btn-group">
-                    <button class="btn" onclick="undoLastAction()">
-                        <span>↩️ Undo Last Action</span>
-                        <span class="key-badge">Ctrl+Z</span>
-                    </button>
-                    <button class="btn btn-primary" onclick="exportImage()">💾 Export as Image (PNG)</button>
-                    <button class="btn btn-danger-outline" onclick="clearAnnotations()">🗑️ Clear All Markups</button>
-                </div>
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <div class="section-title">Actions & Exports</div>
+                <button class="btn" onclick="undoLastAction()">
+                    <span>↩️ Undo Last Action</span>
+                    <span class="kbd-badge">Ctrl+Z</span>
+                </button>
+                <button class="btn btn-export-pdf" onclick="exportScaledPDF()">
+                    🖨️ Export Scaled PDF (1/4" Scale)
+                </button>
+                <button class="btn btn-clear" onclick="clearDrawings()">
+                    🗑️ Clear All Markups
+                </button>
             </div>
         </div>
-    </aside>
 
-    <!-- Main Workspace Area -->
-    <main class="main-area">
-        <div class="top-bar">
-            <span id="status-msg">Upload a PDF drawing to begin marking up.</span>
-            <span class="status-pill" id="active-tool-pill">Active: Select / Move</span>
-        </div>
-
-        <div class="canvas-wrapper" id="canvas-wrapper">
-            <div id="upload-prompt" class="empty-state">
-                <h2>No Floorplan Loaded</h2>
-                <p>Click "Upload PDF Floorplan" on the left to start.</p>
+        <div class="viewport" id="viewport">
+            <div class="canvas-container-wrapper" id="canvas-wrapper">
+                <canvas id="pdf-canvas"></canvas>
+                <canvas id="fabric-canvas"></canvas>
             </div>
-            <!-- Interactive Fabric Canvas -->
-            <canvas id="pdf-canvas"></canvas>
+            <div class="instruction-bar" id="instruction-bar">
+                Upload a PDF drawing to begin marking up.
+            </div>
         </div>
-    </main>
+    </div>
 
     <script>
-        // Configure PDF.js Worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // Constants: 1/4" = 1' at 72 DPI PDF render = 18 pixels per foot
-        const PIXELS_PER_FOOT = 18;
-        const SQPX_PER_SQFT = 324; // 18 * 18
-        const CARPET_LOCK_PX = 12 * PIXELS_PER_FOOT; // 216 pixels
-
-        // App State
+        const SCALE_FACTOR = 18; // 18 pixels = 1 foot (at 72 DPI PDF standard)
+        let pdfDoc = null;
+        let pdfCanvas = document.getElementById('pdf-canvas');
+        let pdfCtx = pdfCanvas.getContext('2d');
+        let fabricCanvas = null;
         let currentTool = 'select';
-        let carpetOrientation = 'horizontal'; // horizontal = lock height to 12', vertical = lock width to 12'
-        let isDrawing = false;
-        let origX, origY;
-        let activeShape = null;
-        let activeText = null;
+        let carpetLockMode = 'width'; // 'width' or 'height'
+        let originalPageWidthPt = 612;
+        let originalPageHeightPt = 792;
 
-        // Undo History Stack
-        const undoStack = [];
-
-        // L-Shape / Polygon Tool State
+        // Poly drawing states
+        let isDrawingPoly = false;
         let polyPoints = [];
-        let tempLines = [];
-        let activeLine = null;
-        let firstPointCircle = null;
+        let activePolyLine = null;
+        let polyGuideLines = [];
 
-        // Initialize Fabric Canvas
-        const canvas = new fabric.Canvas('pdf-canvas', {
-            selection: true,
-            preserveObjectStacking: true
-        });
+        // Box drawing states
+        let isDrawingBox = false;
+        let origX = 0, origY = 0;
+        let activeShape = null;
 
-        // Initialize Pen Brush Settings
-        canvas.freeDrawingBrush.color = '#ef4444';
-        canvas.freeDrawingBrush.width = 3;
+        // Action Stack for Undo
+        let actionHistory = [];
 
-        // Track freehand paths for Undo history
-        canvas.on('path:created', function(e) {
-            pushUndoAction([e.path]);
-        });
-
-        // --- PDF Upload Handling ---
-        document.getElementById('pdf-upload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            updateStatus('Loading PDF drawing... Please wait.');
-            const fileReader = new FileReader();
-
-            fileReader.onload = function() {
-                const typedarray = new Uint8Array(this.result);
-                pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                    pdf.getPage(1).then(function(page) {
-                        const viewport = page.getViewport({ scale: 1.0 });
-
-                        const offscreenCanvas = document.createElement('canvas');
-                        const ctx = offscreenCanvas.getContext('2d');
-                        offscreenCanvas.width = viewport.width;
-                        offscreenCanvas.height = viewport.height;
-
-                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
-                            canvas.setWidth(offscreenCanvas.width);
-                            canvas.setHeight(offscreenCanvas.height);
-
-                            fabric.Image.fromURL(offscreenCanvas.toDataURL(), function(img) {
-                                canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-                                document.getElementById('upload-prompt').style.display = 'none';
-                                updateStatus('PDF Loaded. Shortkey hotkeys active: [A] Custom Area, [C] Carpet Cut, [W] Lock Toggle, [Ctrl+Z] Undo.');
-                            });
-                        });
-                    });
-                }).catch(function(err) {
-                    updateStatus('Error loading PDF: ' + err.message);
-                    console.error(err);
-                });
-            };
-            fileReader.readAsArrayBuffer(file);
-        });
-
-        // --- Undo Functionality ---
-        function pushUndoAction(objectsArray) {
-            if (objectsArray && objectsArray.length > 0) {
-                undoStack.push(objectsArray);
-            }
-        }
-
-        function undoLastAction() {
-            if (undoStack.length === 0) {
-                updateStatus('Nothing to undo.');
-                return;
-            }
-
-            const lastActionObjects = undoStack.pop();
-            lastActionObjects.forEach(function(obj) {
-                if (obj) {
-                    if (obj.associatedText) canvas.remove(obj.associatedText);
-                    if (obj.associatedShape) canvas.remove(obj.associatedShape);
-                    canvas.remove(obj);
-                }
+        window.onload = () => {
+            fabricCanvas = new fabric.Canvas('fabric-canvas', {
+                selection: true,
+                preserveObjectStacking: true
             });
 
-            canvas.discardActiveObject();
-            canvas.renderAll();
-            updateStatus('Undid last action.');
+            setupEventListeners();
+            setupKeyboardShortcuts();
+        };
+
+        function setupEventListeners() {
+            document.getElementById('file-input').addEventListener('change', handleFileUpload);
+
+            fabricCanvas.on('mouse:down', onMouseDown);
+            fabricCanvas.on('mouse:move', onMouseMove);
+            fabricCanvas.on('mouse:dblclick', onMouseDblClick);
+            fabricCanvas.on('object:added', (e) => {
+                if (e.target && !e.target.isGuide) {
+                    // record action if needed
+                }
+            });
         }
 
-        // --- Global Keyboard Listeners (Hotkeys) ---
-        window.addEventListener('keydown', function(e) {
-            // Check if user is actively typing inside an input or editable Fabric text box
-            const activeElement = document.activeElement;
-            const isTypingInput = activeElement && (
-                activeElement.tagName === 'INPUT' || 
-                activeElement.tagName === 'TEXTAREA' || 
-                activeElement.isContentEditable
-            );
+        function setupKeyboardShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || (fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().type === 'i-text' && fabricCanvas.getActiveObject().isEditing)) {
+                    return;
+                }
 
-            const activeObj = canvas.getActiveObject();
-            const isEditingText = activeObj && activeObj.isEditing;
-
-            // Block hotkeys when actively typing text
-            if (isTypingInput || isEditingText) return;
-
-            const key = e.key.toLowerCase();
-            const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-
-            // Undo: Ctrl+Z / Cmd+Z
-            if (isCmdOrCtrl && key === 'z') {
-                e.preventDefault();
-                undoLastAction();
-                return;
-            }
-
-            // Standard Single-key Hotkeys (No Modifier keys)
-            if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-                // Key 'C' -> Carpet Cut Tool
-                if (key === 'c') {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
                     e.preventDefault();
+                    undoLastAction();
+                } else if (e.key.toLowerCase() === 'c') {
                     setTool('carpet');
-                }
-                // Key 'W' -> Cycle carpet lock dimension & switch to Carpet tool
-                else if (key === 'w') {
-                    e.preventDefault();
-                    toggleCarpetOrientation();
-                }
-                // Key 'A' -> Custom Area (L-Shape / Polygon) Tool
-                else if (key === 'a') {
-                    e.preventDefault();
+                } else if (e.key.toLowerCase() === 'w') {
+                    toggleCarpetLock();
+                } else if (e.key.toLowerCase() === 'a') {
                     setTool('poly');
-                }
-                // Delete / Backspace -> Delete selected object
-                else if (e.key === 'Delete' || e.key === 'Backspace') {
-                    e.preventDefault();
-                    if (activeObj) {
-                        if (activeObj.associatedText) canvas.remove(activeObj.associatedText);
-                        if (activeObj.associatedShape) canvas.remove(activeObj.associatedShape);
-                        canvas.remove(activeObj);
-                        canvas.discardActiveObject();
-                        canvas.renderAll();
-                    }
-                }
-                // Escape key -> Cancel active polygon or revert to Select/Move mode
-                else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    if (currentTool === 'poly' && polyPoints.length > 0) {
-                        cancelPolygon();
-                    } else {
-                        setTool('select');
-                    }
-                }
-            }
-        });
-
-        // --- Tool Selection Management ---
-        function setTool(tool) {
-            // Cleanup any half-drawn polygon if switching tools
-            if (currentTool === 'poly' && tool !== 'poly') {
-                cancelPolygon();
-            }
-
-            currentTool = tool;
-            isDrawing = false;
-
-            // Toggle Pen Options Visibility
-            document.getElementById('pen-options').style.display = (tool === 'pen') ? 'flex' : 'none';
-
-            // Update UI Button Styles
-            const tools = ['select', 'pen', 'text', 'area', 'poly', 'carpet'];
-            tools.forEach(function(t) {
-                const btn = document.getElementById('tool-' + t);
-                if (btn) {
-                    if (t === tool) btn.classList.add('active');
-                    else btn.classList.remove('active');
+                } else if (e.key === 'Escape') {
+                    setTool('select');
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    deleteSelected();
                 }
             });
-
-            // Set Fabric Canvas Drawing Modes
-            canvas.isDrawingMode = (tool === 'pen');
-
-            // Toggle selectability on existing objects based on tool
-            const isSelectMode = (tool === 'select');
-            canvas.forEachObject(function(obj) {
-                obj.selectable = isSelectMode;
-                obj.evented = isSelectMode;
-            });
-
-            // Update Status Messages
-            const toolNames = {
-                'select': 'Select / Move Mode',
-                'pen': 'Freehand Pen Tool',
-                'text': 'Text Note Tool',
-                'area': 'Sq Ft Box Tool (Rectangle)',
-                'poly': 'Custom Area (L-Shape Polygon)',
-                'carpet': "12' Carpet Cut Tool"
-            };
-            document.getElementById('active-tool-pill').innerText = 'Active: ' + toolNames[tool];
-
-            const hints = {
-                'select': 'Click & drag objects to move or resize. Press Delete to remove.',
-                'pen': 'Click & drag to sketch or write on the floorplan.',
-                'text': 'Click anywhere on the plan to add custom text notes.',
-                'area': 'Click & drag rectangular rooms. Tool stays active continuously.',
-                'poly': 'Click points around L-shaped rooms. Double-click or click start point to complete [A].',
-                'carpet': "Click & drag 12' wide carpet cuts [C]. Press [W] to toggle lock height/width."
-            };
-            updateStatus(hints[tool]);
         }
 
-        function updateStatus(msg) {
-            document.getElementById('status-msg').innerText = msg;
-        }
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file || file.type !== 'application/pdf') return;
 
-        function updatePenSettings() {
-            canvas.freeDrawingBrush.color = document.getElementById('pen-color').value;
-            canvas.freeDrawingBrush.width = parseInt(document.getElementById('pen-width').value, 10);
-        }
-
-        function toggleCarpetOrientation() {
-            carpetOrientation = (carpetOrientation === 'horizontal') ? 'vertical' : 'horizontal';
-            const label = document.getElementById('carpet-lock-label');
-            label.innerText = (carpetOrientation === 'horizontal') ? "🔄 Lock: 12' Height" : "🔄 Lock: 12' Width";
-            
-            if (currentTool !== 'carpet') {
-                setTool('carpet');
-            } else {
-                updateStatus(carpetOrientation === 'horizontal' ? "Carpet tool set to Lock 12' Height" : "Carpet tool set to Lock 12' Width");
-            }
-        }
-
-        // --- Mouse Event Handlers ---
-
-        canvas.on('mouse:down', function(o) {
-            if (currentTool === 'select' || currentTool === 'pen') return;
-
-            const pointer = canvas.getPointer(o.e);
-            origX = pointer.x;
-            origY = pointer.y;
-
-            // --- Text Tool ---
-            if (currentTool === 'text') {
-                const text = new fabric.IText('Type note...', {
-                    left: origX,
-                    top: origY,
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: 22,
-                    fill: '#dc2626',
-                    fontWeight: 'bold',
-                    selectable: true
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const typedarray = new Uint8Array(evt.target.result);
+                pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                    pdfDoc = pdf;
+                    renderPage(1);
                 });
-                canvas.add(text);
-                canvas.setActiveObject(text);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderPage(pageNum) {
+            pdfDoc.getPage(pageNum).then(page => {
+                const unscaledViewport = page.getViewport({ scale: 1.0 });
+                originalPageWidthPt = unscaledViewport.width;
+                originalPageHeightPt = unscaledViewport.height;
+
+                const viewport = page.getViewport({ scale: 1.5 }); // 1.5x scale for crisp rendering
+                pdfCanvas.width = viewport.width;
+                pdfCanvas.height = viewport.height;
+
+                const wrapper = document.getElementById('canvas-wrapper');
+                wrapper.style.width = viewport.width + 'px';
+                wrapper.style.height = viewport.height + 'px';
+
+                fabricCanvas.setWidth(viewport.width);
+                fabricCanvas.setHeight(viewport.height);
+
+                const renderContext = {
+                    canvasContext: pdfCtx,
+                    viewport: viewport
+                };
+
+                page.render(renderContext).promise.then(() => {
+                    updateInstruction('Loaded PDF at 1/4" scale. Select a tool to begin.');
+                });
+            });
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.sidebar .btn').forEach(b => {
+                if (b.id && b.id.startsWith('tool-') && b.id !== 'tool-carpet-lock') {
+                    b.classList.remove('active');
+                }
+            });
+
+            const activeBtn = document.getElementById(`tool-${tool}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            resetPolyDrawing();
+            fabricCanvas.isDrawingMode = (tool === 'pen');
+            fabricCanvas.selection = (tool === 'select');
+
+            if (tool === 'pen') {
+                fabricCanvas.freeDrawingBrush.color = '#dc2626';
+                fabricCanvas.freeDrawingBrush.width = 3;
+                updateInstruction('Pen Mode: Draw freehand markups.');
+            } else if (tool === 'select') {
+                updateInstruction('Select Mode: Move or resize objects.');
+            } else if (tool === 'sqft') {
+                updateInstruction('SqFt Box: Click and drag to draw rectangular room segment.');
+            } else if (tool === 'poly') {
+                updateInstruction('Custom L-Shape: Click room corners sequentially. Double-click to finish.');
+            } else if (tool === 'carpet') {
+                updateInstruction(`12' Carpet Cut: Click and drag segment. Locked to 12' ${carpetLockMode}.`);
+            } else if (tool === 'text') {
+                updateInstruction('Text Tool: Click on canvas to insert notes.');
+            }
+        }
+
+        function toggleCarpetLock() {
+            carpetLockMode = (carpetLockMode === 'width') ? 'height' : 'width';
+            document.getElementById('carpet-lock-label').innerText = `🔒 Lock: 12' ${carpetLockMode.charAt(0).toUpperCase() + carpetLockMode.slice(1)}`;
+            if (currentTool === 'carpet') {
+                updateInstruction(`12' Carpet Cut: Click and drag segment. Locked to 12' ${carpetLockMode}.`);
+            }
+        }
+
+        function onMouseDown(opt) {
+            const pointer = fabricCanvas.getPointer(opt.e);
+
+            if (currentTool === 'text') {
+                const text = new fabric.IText('Note', {
+                    left: pointer.x,
+                    top: pointer.y,
+                    fontSize: 18,
+                    fill: '#1e293b',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)'
+                });
+                fabricCanvas.add(text);
+                recordAction([text]);
+                setTool('select');
+                fabricCanvas.setActiveObject(text);
                 text.enterEditing();
-                text.selectAll();
-                pushUndoAction([text]);
                 return;
             }
 
-            // --- L-Shape / Polygon Tool ---
-            if (currentTool === 'poly') {
-                handlePolyClick(pointer);
-                return;
-            }
+            if (currentTool === 'sqft' || currentTool === 'carpet') {
+                isDrawingBox = true;
+                origX = pointer.x;
+                origY = pointer.y;
 
-            // --- Rectangular Area & Carpet Tools ---
-            if (currentTool === 'area' || currentTool === 'carpet') {
-                isDrawing = true;
-
-                const isArea = (currentTool === 'area');
-                const fillColor = isArea ? 'rgba(37, 99, 235, 0.25)' : 'rgba(220, 38, 38, 0.25)';
-                const strokeColor = isArea ? '#2563eb' : '#dc2626';
+                let strokeColor = (currentTool === 'sqft') ? '#2563eb' : '#d97706';
+                let fillColor = (currentTool === 'sqft') ? 'rgba(37, 99, 235, 0.2)' : 'rgba(217, 119, 6, 0.25)';
 
                 activeShape = new fabric.Rect({
                     left: origX,
@@ -694,348 +306,237 @@ html
                     fill: fillColor,
                     stroke: strokeColor,
                     strokeWidth: 2,
-                    selectable: false,
-                    originX: 'left',
-                    originY: 'top'
+                    transparentCorners: false
                 });
 
-                activeText = new fabric.Text('', {
-                    left: origX,
-                    top: origY,
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: 15,
-                    fontWeight: 'bold',
-                    fill: '#0f172a',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    padding: 4,
-                    originX: 'center',
-                    originY: 'center',
-                    selectable: false
-                });
+                fabricCanvas.add(activeShape);
+            } else if (currentTool === 'poly') {
+                if (!isDrawingPoly) {
+                    isDrawingPoly = true;
+                    polyPoints = [{ x: pointer.x, y: pointer.y }];
 
-                activeShape.isArea = isArea;
-                activeShape.isCarpet = !isArea;
-                activeShape.carpetOrientation = carpetOrientation;
-                activeShape.associatedText = activeText;
-                activeText.associatedShape = activeShape;
-
-                canvas.add(activeShape, activeText);
-            }
-        });
-
-        canvas.on('mouse:move', function(o) {
-            const pointer = canvas.getPointer(o.e);
-
-            // Handle Rubberband Line for Polygon Tool
-            if (currentTool === 'poly' && activeLine) {
-                activeLine.set({ x2: pointer.x, y2: pointer.y });
-                activeLine.setCoords();
-                canvas.renderAll();
-                return;
-            }
-
-            if (!isDrawing || !activeShape) return;
-
-            let w = Math.abs(pointer.x - origX);
-            let h = Math.abs(pointer.y - origY);
-
-            // Enforce 12' Roll Lock for Carpet Cut
-            if (currentTool === 'carpet') {
-                if (carpetOrientation === 'horizontal') {
-                    h = CARPET_LOCK_PX;
-                    activeShape.set({ top: origY });
+                    activePolyLine = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+                        stroke: '#2563eb',
+                        strokeWidth: 2,
+                        strokeDashArray: [4, 4],
+                        selectable: false,
+                        evented: false,
+                        isGuide: true
+                    });
+                    fabricCanvas.add(activePolyLine);
                 } else {
-                    w = CARPET_LOCK_PX;
-                    activeShape.set({ left: origX });
+                    polyPoints.push({ x: pointer.x, y: pointer.y });
+                    const prevPt = polyPoints[polyPoints.length - 2];
+                    const guideLine = new fabric.Line([prevPt.x, prevPt.y, pointer.x, pointer.y], {
+                        stroke: '#2563eb',
+                        strokeWidth: 2,
+                        selectable: false,
+                        evented: false,
+                        isGuide: true
+                    });
+                    polyGuideLines.push(guideLine);
+                    fabricCanvas.add(guideLine);
                 }
             }
-
-            activeShape.set({ width: w, height: h });
-
-            // Support dragging in any direction (Up/Left)
-            if (currentTool === 'area') {
-                if (pointer.x < origX) activeShape.set({ left: pointer.x });
-                if (pointer.y < origY) activeShape.set({ top: pointer.y });
-            } else if (currentTool === 'carpet') {
-                if (carpetOrientation === 'horizontal' && pointer.x < origX) {
-                    activeShape.set({ left: pointer.x });
-                } else if (carpetOrientation === 'vertical' && pointer.y < origY) {
-                    activeShape.set({ top: pointer.y });
-                }
-            }
-
-            activeShape.setCoords();
-            updateLinkedText(activeShape);
-            canvas.renderAll();
-        });
-
-        canvas.on('mouse:up', function(o) {
-            if (!isDrawing) return;
-            isDrawing = false;
-
-            if (activeShape) {
-                // Remove shape if it was an accidental quick tap
-                if (activeShape.width < 10 && activeShape.height < 10) {
-                    canvas.remove(activeShape);
-                    canvas.remove(activeText);
-                } else {
-                    activeShape.selectable = (currentTool === 'select');
-
-                    // Restrain scale controls for Carpet Cuts to keep 12' dimension intact
-                    if (activeShape.isCarpet) {
-                        if (activeShape.carpetOrientation === 'horizontal') {
-                            activeShape.setControlsVisibility({ mt: false, mb: false, tl: false, tr: false, bl: false, br: false });
-                        } else {
-                            activeShape.setControlsVisibility({ ml: false, mr: false, tl: false, tr: false, bl: false, br: false });
-                        }
-                    }
-
-                    // Push shape + linked text pair onto Undo stack
-                    pushUndoAction([activeShape, activeText]);
-                }
-            }
-            activeShape = null;
-            activeText = null;
-            // Tool STAYS SELECTED for continuous measurements!
-        });
-
-        // Double Click finishes Polygon creation
-        canvas.on('mouse:dblclick', function(o) {
-            if (currentTool === 'poly' && polyPoints.length >= 3) {
-                finishPolygon();
-            }
-        });
-
-        // --- Custom Polygon / L-Shape Logic ---
-
-        function handlePolyClick(pointer) {
-            // Check if clicking near starting point to close shape
-            if (polyPoints.length >= 3) {
-                const startPt = polyPoints[0];
-                const dist = Math.hypot(pointer.x - startPt.x, pointer.y - startPt.y);
-                if (dist < 18) {
-                    finishPolygon();
-                    return;
-                }
-            }
-
-            polyPoints.push({ x: pointer.x, y: pointer.y });
-
-            // Mark initial starting vertex
-            if (polyPoints.length === 1) {
-                firstPointCircle = new fabric.Circle({
-                    left: pointer.x,
-                    top: pointer.y,
-                    radius: 6,
-                    fill: '#2563eb',
-                    stroke: '#ffffff',
-                    strokeWidth: 2,
-                    originX: 'center',
-                    originY: 'center',
-                    selectable: false,
-                    evented: false
-                });
-                canvas.add(firstPointCircle);
-            }
-
-            // Draw solid line segment between previous point and current point
-            if (polyPoints.length > 1) {
-                const prev = polyPoints[polyPoints.length - 2];
-                const line = new fabric.Line([prev.x, prev.y, pointer.x, pointer.y], {
-                    stroke: '#2563eb',
-                    strokeWidth: 2,
-                    selectable: false,
-                    evented: false
-                });
-                tempLines.push(line);
-                canvas.add(line);
-            }
-
-            // Setup active rubberband line attached to mouse pointer
-            if (activeLine) canvas.remove(activeLine);
-            activeLine = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
-                stroke: '#2563eb',
-                strokeWidth: 2,
-                strokeDashArray: [4, 4],
-                selectable: false,
-                evented: false
-            });
-            canvas.add(activeLine);
-            canvas.renderAll();
         }
 
-        function finishPolygon() {
+        function onMouseMove(opt) {
+            const pointer = fabricCanvas.getPointer(opt.e);
+
+            if (isDrawingBox && activeShape) {
+                let w = pointer.x - origX;
+                let h = pointer.y - origY;
+
+                if (currentTool === 'carpet') {
+                    const fixed12ftPx = 12 * SCALE_FACTOR * 1.5; // accounting for 1.5 viewport render
+                    if (carpetLockMode === 'width') {
+                        w = (w >= 0) ? fixed12ftPx : -fixed12ftPx;
+                    } else {
+                        h = (h >= 0) ? fixed12ftPx : -fixed12ftPx;
+                    }
+                }
+
+                if (w < 0) activeShape.set({ left: pointer.x });
+                if (h < 0) activeShape.set({ top: pointer.y });
+
+                activeShape.set({
+                    width: Math.abs(w),
+                    height: Math.abs(h)
+                });
+
+                fabricCanvas.renderAll();
+            } else if (isDrawingPoly && activePolyLine) {
+                const lastPt = polyPoints[polyPoints.length - 1];
+                activePolyLine.set({ x1: lastPt.x, y1: lastPt.y, x2: pointer.x, y2: pointer.y });
+                fabricCanvas.renderAll();
+            }
+        }
+
+        fabricCanvas.on('mouse:up', () => {
+            if (isDrawingBox && activeShape) {
+                isDrawingBox = false;
+
+                const actualScale = SCALE_FACTOR * 1.5;
+                const widthFt = (activeShape.width / actualScale).toFixed(1);
+                const heightFt = (activeShape.height / actualScale).toFixed(1);
+                const sqft = (widthFt * heightFt).toFixed(1);
+
+                const labelText = (currentTool === 'sqft') 
+                    ? `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`
+                    : `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
+
+                const label = new fabric.Text(labelText, {
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: (currentTool === 'sqft') ? '#1e3a8a' : '#78350f',
+                    textAlign: 'center',
+                    originX: 'center',
+                    originY: 'center',
+                    left: activeShape.left + (activeShape.width / 2),
+                    top: activeShape.top + (activeShape.height / 2)
+                });
+
+                const group = new fabric.Group([activeShape, label], {
+                    selectable: true
+                });
+
+                fabricCanvas.remove(activeShape);
+                fabricCanvas.add(group);
+                recordAction([group]);
+
+                activeShape = null;
+                // Keep tool active for persistent drawing
+            }
+        });
+
+        function onMouseDblClick() {
+            if (currentTool === 'poly' && isDrawingPoly) {
+                finishPolyDrawing();
+            }
+        }
+
+        function finishPolyDrawing() {
             if (polyPoints.length < 3) {
-                cancelPolygon();
+                resetPolyDrawing();
                 return;
             }
 
-            // Clean up temporary drawing helpers
-            if (activeLine) canvas.remove(activeLine);
-            if (firstPointCircle) canvas.remove(firstPointCircle);
-            tempLines.forEach(l => canvas.remove(l));
-            tempLines = [];
-            activeLine = null;
-            firstPointCircle = null;
+            const actualScale = SCALE_FACTOR * 1.5;
+            let areaPx = 0;
+            let cx = 0, cy = 0;
 
-            // Calculate precise pixel area and centroid
-            const areaPx = getPolygonArea(polyPoints);
-            const sqFt = areaPx / SQPX_PER_SQFT;
-            const centroid = getPolygonCentroid(polyPoints);
+            for (let i = 0; i < polyPoints.length; i++) {
+                let j = (i + 1) % polyPoints.length;
+                areaPx += polyPoints[i].x * polyPoints[j].y;
+                areaPx -= polyPoints[j].x * polyPoints[i].y;
+                cx += polyPoints[i].x;
+                cy += polyPoints[i].y;
+            }
+            areaPx = Math.abs(areaPx) / 2;
+            const sqft = (areaPx / (actualScale * actualScale)).toFixed(1);
 
-            // Render Fabric Polygon
-            const polygon = new fabric.Polygon(polyPoints.map(p => ({ x: p.x, y: p.y })), {
-                fill: 'rgba(37, 99, 235, 0.25)',
+            cx /= polyPoints.length;
+            cy /= polyPoints.length;
+
+            const polygon = new fabric.Polygon(polyPoints, {
+                fill: 'rgba(37, 99, 235, 0.2)',
                 stroke: '#2563eb',
                 strokeWidth: 2,
-                selectable: (currentTool === 'select'),
                 objectCaching: false
             });
 
-            const text = new fabric.Text(sqFt.toFixed(1) + ' Sq Ft', {
-                left: centroid.x,
-                top: centroid.y,
-                fontFamily: 'system-ui, sans-serif',
+            const label = new fabric.Text(`${sqft} Sq Ft`, {
                 fontSize: 15,
                 fontWeight: 'bold',
-                fill: '#0f172a',
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                padding: 4,
+                fill: '#1e3a8a',
                 originX: 'center',
                 originY: 'center',
-                selectable: (currentTool === 'select')
+                left: cx,
+                top: cy
             });
 
-            polygon.isPolyArea = true;
-            polygon.baseSqFt = sqFt;
-            polygon.associatedText = text;
-            text.associatedShape = polygon;
+            const group = new fabric.Group([polygon, label], { selectable: true });
 
-            canvas.add(polygon, text);
-            pushUndoAction([polygon, text]);
+            resetPolyDrawing();
+            fabricCanvas.add(group);
+            recordAction([group]);
+        }
 
+        function resetPolyDrawing() {
+            isDrawingPoly = false;
             polyPoints = [];
-            canvas.renderAll();
-
-            // Notice: Tool remains 'poly' for continuous L-shape outlining!
+            if (activePolyLine) fabricCanvas.remove(activePolyLine);
+            polyGuideLines.forEach(l => fabricCanvas.remove(l));
+            polyGuideLines = [];
+            activePolyLine = null;
+            fabricCanvas.renderAll();
         }
 
-        function cancelPolygon() {
-            if (activeLine) canvas.remove(activeLine);
-            if (firstPointCircle) canvas.remove(firstPointCircle);
-            tempLines.forEach(l => canvas.remove(l));
-            tempLines = [];
-            activeLine = null;
-            firstPointCircle = null;
-            polyPoints = [];
-            canvas.renderAll();
+        function recordAction(objects) {
+            actionHistory.push(objects);
         }
 
-        // Geometry Helpers for Polygon Area & Centroid
-        function getPolygonArea(points) {
-            let area = 0;
-            let j = points.length - 1;
-            for (let i = 0; i < points.length; i++) {
-                area += (points[j].x + points[i].x) * (points[j].y - points[i].y);
-                j = i;
-            }
-            return Math.abs(area / 2);
-        }
-
-        function getPolygonCentroid(points) {
-            let cx = 0, cy = 0, area = 0;
-            let j = points.length - 1;
-            for (let i = 0; i < points.length; i++) {
-                let p1 = points[i];
-                let p2 = points[j];
-                let f = (p1.x * p2.y - p2.x * p1.y);
-                cx += (p1.x + p2.x) * f;
-                cy += (p1.y + p2.y) * f;
-                area += f;
-                j = i;
-            }
-            area = area * 0.5;
-            if (Math.abs(area) < 0.0001) {
-                let minX = Math.min(...points.map(p => p.x));
-                let maxX = Math.max(...points.map(p => p.x));
-                let minY = Math.min(...points.map(p => p.y));
-                let maxY = Math.max(...points.map(p => p.y));
-                return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
-            }
-            return { x: Math.abs(cx / (6 * area)), y: Math.abs(cy / (6 * area)) };
-        }
-
-        // --- Live Text & Calculation Updates during Move / Scale ---
-
-        canvas.on('object:scaling', function(e) { updateLinkedText(e.target); });
-        canvas.on('object:moving', function(e) { updateLinkedText(e.target); });
-
-        function updateLinkedText(obj) {
-            if (!obj || !obj.associatedText) return;
-
-            const text = obj.associatedText;
-
-            if (obj.isPolyArea) {
-                const currentSqFt = obj.baseSqFt * obj.scaleX * obj.scaleY;
-                text.set({ text: currentSqFt.toFixed(1) + ' Sq Ft' });
-                const center = obj.getCenterPoint();
-                text.set({ left: center.x, top: center.y });
-            } else {
-                const w = obj.width * obj.scaleX;
-                const h = obj.height * obj.scaleY;
-                const left = obj.left;
-                const top = obj.top;
-
-                if (obj.isArea) {
-                    const sqft = (w / PIXELS_PER_FOOT) * (h / PIXELS_PER_FOOT);
-                    text.set({ text: sqft.toFixed(1) + ' Sq Ft' });
-                } else if (obj.isCarpet) {
-                    if (obj.carpetOrientation === 'horizontal') {
-                        const len = (w / PIXELS_PER_FOOT);
-                        const sqft = 12 * len;
-                        text.set({ text: "12' x " + len.toFixed(1) + "'\n(" + sqft.toFixed(1) + " Sq Ft)" });
-                    } else {
-                        const len = (h / PIXELS_PER_FOOT);
-                        const sqft = 12 * len;
-                        text.set({ text: "12' x " + len.toFixed(1) + "'\n(" + sqft.toFixed(1) + " Sq Ft)" });
-                    }
-                }
-
-                text.set({
-                    left: left + (w / 2),
-                    top: top + (h / 2)
-                });
-            }
-
-            text.setCoords();
-        }
-
-        // --- Actions ---
-
-        function clearAnnotations() {
-            if (confirm("Are you sure you want to clear all drawings and measurements?")) {
-                cancelPolygon();
-                canvas.getObjects().forEach(function(obj) {
-                    canvas.remove(obj);
-                });
-                undoStack.length = 0;
-                updateStatus('All markups cleared.');
+        function undoLastAction() {
+            if (actionHistory.length > 0) {
+                const lastObjects = actionHistory.pop();
+                lastObjects.forEach(obj => fabricCanvas.remove(obj));
+                fabricCanvas.renderAll();
+                updateInstruction('Undid last markup action.');
             }
         }
 
-        function exportImage() {
-            if (!canvas.backgroundImage) {
+        function deleteSelected() {
+            const activeObjects = fabricCanvas.getActiveObjects();
+            if (activeObjects.length > 0) {
+                activeObjects.forEach(obj => fabricCanvas.remove(obj));
+                fabricCanvas.discardActiveObject();
+                fabricCanvas.renderAll();
+                updateInstruction('Deleted selected markup.');
+            }
+        }
+
+        function clearDrawings() {
+            if (confirm("Are you sure you want to clear all markups?")) {
+                fabricCanvas.clear();
+                actionHistory = [];
+                updateInstruction('All markups cleared.');
+            }
+        }
+
+        function exportScaledPDF() {
+            if (!pdfDoc) {
                 alert("Please upload a PDF floorplan first.");
                 return;
             }
 
-            const dataURL = canvas.toDataURL({ format: 'png', quality: 1.0 });
-            const link = document.createElement('a');
-            link.download = 'floorplan-markup.png';
-            link.href = dataURL;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const { jsPDF } = window.jspdf;
+
+            // Combine PDF page background canvas + Fabric markup canvas into flattened full-res export
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = pdfCanvas.width;
+            exportCanvas.height = pdfCanvas.height;
+            const ctx = exportCanvas.getContext('2d');
+
+            ctx.drawImage(pdfCanvas, 0, 0);
+            ctx.drawImage(fabricCanvas.getElement(), 0, 0);
+
+            const imgData = exportCanvas.toDataURL('image/png', 1.0);
+
+            // Create jsPDF using native original PDF page dimensions in points (72 points = 1 inch)
+            const orientation = originalPageWidthPt > originalPageHeightPt ? 'landscape' : 'portrait';
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'pt',
+                format: [originalPageWidthPt, originalPageHeightPt]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, originalPageWidthPt, originalPageHeightPt);
+            pdf.save('MarkedUp_FloorPlan_14Scale.pdf');
+            updateInstruction('Exported true-scale PDF document.');
+        }
+
+        function updateInstruction(text) {
+            document.getElementById('instruction-bar').innerText = text;
         }
     </script>
 </body>
