@@ -1,55 +1,60 @@
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FloorMark Pro - Flooring PDF Markup Tool</title>
-    <!-- PDF.js Library + Redundant Fallback -->
+    
+    <!-- PDF.js Library + CDN Fallbacks -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if (typeof pdfjsLib === 'undefined') document.write('<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"><\/script>');</script>
     
-    <!-- Fabric.js Library + Redundant Fallback -->
+    <!-- Fabric.js Library + CDN Fallbacks -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script>if (typeof fabric === 'undefined') document.write('<script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"><\/script>');</script>
 
-    <!-- jsPDF Library + Redundant Fallback -->
+    <!-- jsPDF Library + CDN Fallbacks -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>if (typeof window.jspdf === 'undefined') document.write('<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>');</script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f3f4f6; color: #1f2937; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f3f4f6; color: #1f2937; overflow: hidden; }
         
-        /* Top Header Navigation */
-        header { background-color: #1e293b; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 20; }
-        .header-title-group { display: flex; align-items: center; gap: 16px; }
-        header h1 { font-size: 1.2rem; font-weight: 600; }
-        .scale-badge { font-size: 0.8rem; background-color: #334155; color: #cbd5e1; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
-        .header-instruction { background-color: #0f172a; color: #38bdf8; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; border: 1px solid #1e293b; max-width: 500px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        /* Top Navigation Bar */
+        header { background-color: #0f172a; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.15); z-index: 20; }
+        .header-title-group { display: flex; align-items: center; gap: 14px; }
+        header h1 { font-size: 1.2rem; font-weight: 700; color: #ffffff; }
+        .scale-badge { font-size: 0.78rem; background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+        .header-instruction { background-color: #1e293b; color: #f8fafc; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; border: 1px solid #334155; max-width: 550px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
 
-        /* App Layout */
+        /* Application Layout */
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 310px; background-color: #ffffff; border-right: 1px solid #e5e7eb; padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-        .section-title { font-size: 0.72rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .sidebar { width: 310px; min-width: 310px; background-color: #ffffff; border-right: 1px solid #e2e8f0; padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+        .section-title { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
         
-        /* Buttons & Controls */
-        .btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 9px 12px; background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem; font-weight: 500; color: #374151; cursor: pointer; transition: all 0.15s ease-in-out; }
-        .btn:hover { background-color: #f3f4f6; border-color: #9ca3af; }
+        /* Interactive Buttons */
+        .btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 9px 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer; transition: all 0.15s ease-in-out; }
+        .btn:hover { background-color: #f1f5f9; border-color: #94a3b8; }
         .btn.active { background-color: #eff6ff; border-color: #2563eb; color: #1d4ed8; font-weight: 600; box-shadow: 0 0 0 1px #2563eb; }
         .btn-upload { background-color: #059669; color: white; border: none; justify-content: center; font-weight: 600; }
         .btn-upload:hover { background-color: #047857; }
+        .btn-finish-poly { background-color: #16a34a; color: white; border: none; justify-content: space-between; font-weight: 600; display: none; }
+        .btn-finish-poly:hover { background-color: #15803d; }
         .btn-export-pdf { background-color: #2563eb; color: white; border: none; justify-content: center; font-weight: 600; }
         .btn-export-pdf:hover { background-color: #1d4ed8; }
-        .btn-clear { background-color: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; justify-content: center; }
-        .btn-clear:hover { background-color: #fecaca; }
-        .kbd-badge { background-color: #e5e7eb; color: #4b5563; font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; font-family: monospace; border: 1px solid #d1d5db; }
+        .btn-clear { background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; justify-content: center; }
+        .btn-clear:hover { background-color: #fee2e2; }
+        .kbd-badge { background-color: #e2e8f0; color: #475569; font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; font-family: monospace; border: 1px solid #cbd5e1; }
         .btn.active .kbd-badge { background-color: #bfdbfe; color: #1e40af; border-color: #93c5fd; }
+        .btn-finish-poly .kbd-badge { background-color: #22c55e; color: white; border-color: #16a34a; }
 
-        /* Workspace Canvas Viewport */
-        .viewport { flex: 1; background-color: #4b5563; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; padding: 20px; }
-        .canvas-container-wrapper { position: relative; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4); background-color: white; }
-        #pdf-canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        #fabric-canvas { position: absolute; top: 0; left: 0; z-index: 2; }
+        /* Canvas Workspace Viewport */
+        .viewport { flex: 1; background-color: #475569; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; padding: 20px; }
+        .canvas-wrapper { position: relative; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4); background-color: #ffffff; }
+        .empty-state { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #f8fafc; pointer-events: none; }
+        .empty-state h2 { font-size: 1.4rem; margin-bottom: 6px; }
         #file-input { display: none; }
     </style>
 </head>
@@ -66,7 +71,7 @@
     </header>
 
     <div class="main-container">
-        <div class="sidebar">
+        <aside class="sidebar">
             <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">
                 📄 Upload PDF Floorplan
             </button>
@@ -92,11 +97,15 @@
                 <div class="section-title">Measurement Tools</div>
                 <div style="display: flex; flex-direction: column; gap: 6px;">
                     <button class="btn" id="tool-sqft" onclick="setTool('sqft')">
-                        <span>📦 SqFt Box</span>
+                        <span>📦 SqFt Box (Rectangle)</span>
                     </button>
                     <button class="btn" id="tool-poly" onclick="setTool('poly')">
                         <span>📐 Custom Area (L-Shape)</span>
                         <span class="kbd-badge">A</span>
+                    </button>
+                    <button class="btn btn-finish-poly" id="btn-finish-poly" onclick="finishPolyDrawing()">
+                        <span>✅ Finish L-Shape</span>
+                        <span class="kbd-badge">Enter</span>
                     </button>
                     <button class="btn" id="tool-carpet" onclick="setTool('carpet')">
                         <span>✂️ 12' Carpet Cut</span>
@@ -122,14 +131,17 @@
                     🗑️ Clear All Markups
                 </button>
             </div>
-        </div>
+        </aside>
 
-        <div class="viewport" id="viewport">
-            <div class="canvas-container-wrapper" id="canvas-wrapper">
-                <canvas id="pdf-canvas"></canvas>
-                <canvas id="fabric-canvas"></canvas>
+        <main class="viewport" id="viewport">
+            <div id="upload-prompt" class="empty-state">
+                <h2>No Floorplan Loaded</h2>
+                <p>Click "Upload PDF Floorplan" on the left to start.</p>
             </div>
-        </div>
+            <div class="canvas-wrapper" id="canvas-wrapper" style="display: none;">
+                <canvas id="pdf-canvas"></canvas>
+            </div>
+        </main>
     </div>
 
     <script>
@@ -138,28 +150,30 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
-        const SCALE_FACTOR = 18; // 18 pixels = 1 foot (at 72 DPI PDF standard)
+        const BASE_DPI_SCALE = 18; // 18 pixels per foot at 72 DPI PDF standard
+        const RENDER_SCALE = 1.5;   // Render PDF at 1.5x for crisp text
+        const PIXELS_PER_FOOT = BASE_DPI_SCALE * RENDER_SCALE; // 27 pixels = 1 foot on canvas
+        const SQPX_PER_SQFT = PIXELS_PER_FOOT * PIXELS_PER_FOOT; // 729 sq px = 1 sq ft
+
         let pdfDoc = null;
-        let pdfCanvas = document.getElementById('pdf-canvas');
-        let pdfCtx = pdfCanvas ? pdfCanvas.getContext('2d') : null;
         let fabricCanvas = null;
         let currentTool = 'select';
-        let carpetLockMode = 'width';
+        let carpetLockMode = 'width'; // 'width' or 'height'
         let originalPageWidthPt = 612;
         let originalPageHeightPt = 792;
 
-        // Custom Poly State
+        // Custom L-Shape / Poly State
         let isDrawingPoly = false;
         let polyPoints = [];
         let activePolyLine = null;
         let polyGuideLines = [];
 
-        // Box Drawing State
+        // Rect Box / Carpet State
         let isDrawingBox = false;
         let origX = 0, origY = 0;
         let activeShape = null;
 
-        // History Stack
+        // Action History Stack for Undo
         let actionHistory = [];
 
         window.addEventListener('load', () => {
@@ -170,11 +184,11 @@
 
         function initFabric() {
             if (typeof fabric === 'undefined') {
-                updateInstruction("Error: Interactive drawing engine failed to load. Check firewall rules.");
+                updateInstruction("Error: Drawing engine library failed to load. Check network firewall.");
                 return;
             }
 
-            fabricCanvas = new fabric.Canvas('fabric-canvas', {
+            fabricCanvas = new fabric.Canvas('pdf-canvas', {
                 selection: true,
                 preserveObjectStacking: true
             });
@@ -183,6 +197,17 @@
             fabricCanvas.on('mouse:move', onMouseMove);
             fabricCanvas.on('mouse:dblclick', onMouseDblClick);
             fabricCanvas.on('mouse:up', onMouseUp);
+
+            fabricCanvas.on('path:created', function(e) {
+                recordAction([e.path]);
+            });
+
+            // Recalculate mouse offsets when user scrolls viewport
+            const viewport = document.getElementById('viewport');
+            if (viewport) {
+                viewport.addEventListener('scroll', () => { if (fabricCanvas) fabricCanvas.calcOffset(); });
+            }
+            window.addEventListener('resize', () => { if (fabricCanvas) fabricCanvas.calcOffset(); });
         }
 
         function setupEventListeners() {
@@ -194,23 +219,39 @@
 
         function setupKeyboardShortcuts() {
             window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                if (fabricCanvas && fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().type === 'i-text' && fabricCanvas.getActiveObject().isEditing) {
+                const activeObj = fabricCanvas ? fabricCanvas.getActiveObject() : null;
+                const isEditingText = activeObj && activeObj.type === 'i-text' && activeObj.isEditing;
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || isEditingText) {
                     return;
                 }
 
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                const key = e.key.toLowerCase();
+                if ((e.ctrlKey || e.metaKey) && key === 'z') {
                     e.preventDefault();
                     undoLastAction();
-                } else if (e.key.toLowerCase() === 'c') {
+                } else if (key === 'c' && !e.ctrlKey) {
+                    e.preventDefault();
                     setTool('carpet');
-                } else if (e.key.toLowerCase() === 'w') {
+                } else if (key === 'w' && !e.ctrlKey) {
+                    e.preventDefault();
                     toggleCarpetLock();
-                } else if (e.key.toLowerCase() === 'a') {
+                } else if (key === 'a' && !e.ctrlKey) {
+                    e.preventDefault();
                     setTool('poly');
+                } else if (e.key === 'Enter') {
+                    if (currentTool === 'poly' && isDrawingPoly) {
+                        e.preventDefault();
+                        finishPolyDrawing();
+                    }
                 } else if (e.key === 'Escape') {
-                    setTool('select');
+                    e.preventDefault();
+                    if (currentTool === 'poly' && isDrawingPoly) {
+                        resetPolyDrawing();
+                    } else {
+                        setTool('select');
+                    }
                 } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
                     deleteSelected();
                 }
             });
@@ -221,10 +262,11 @@
             if (!file || file.type !== 'application/pdf') return;
 
             if (typeof pdfjsLib === 'undefined') {
-                alert("PDF rendering engine is currently unavailable.");
+                updateInstruction("PDF.js engine is unavailable. Please refresh page.");
                 return;
             }
 
+            updateInstruction("Loading PDF floorplan... Please wait.");
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const typedarray = new Uint8Array(evt.target.result);
@@ -232,7 +274,7 @@
                     pdfDoc = pdf;
                     renderPage(1);
                 }).catch(err => {
-                    alert("Error opening PDF document: " + err.message);
+                    updateInstruction("Error loading PDF: " + err.message);
                 });
             };
             reader.readAsArrayBuffer(file);
@@ -244,31 +286,42 @@
                 originalPageWidthPt = unscaledViewport.width;
                 originalPageHeightPt = unscaledViewport.height;
 
-                const viewport = page.getViewport({ scale: 1.5 });
-                pdfCanvas.width = viewport.width;
-                pdfCanvas.height = viewport.height;
+                const viewport = page.getViewport({ scale: RENDER_SCALE });
 
-                const wrapper = document.getElementById('canvas-wrapper');
-                wrapper.style.width = viewport.width + 'px';
-                wrapper.style.height = viewport.height + 'px';
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = viewport.width;
+                offCanvas.height = viewport.height;
+                const ctx = offCanvas.getContext('2d');
 
-                if (fabricCanvas) {
+                page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
+                    const imgDataUrl = offCanvas.toDataURL('image/png');
+
                     fabricCanvas.setWidth(viewport.width);
                     fabricCanvas.setHeight(viewport.height);
-                }
 
-                const renderContext = {
-                    canvasContext: pdfCtx,
-                    viewport: viewport
-                };
+                    const wrapper = document.getElementById('canvas-wrapper');
+                    wrapper.style.width = viewport.width + 'px';
+                    wrapper.style.height = viewport.height + 'px';
+                    wrapper.style.display = 'block';
 
-                page.render(renderContext).promise.then(() => {
-                    updateInstruction('Loaded PDF at 1/4" scale. Select a tool to mark up.');
+                    fabric.Image.fromURL(imgDataUrl, function(img) {
+                        fabricCanvas.setBackgroundImage(img, function() {
+                            fabricCanvas.renderAll();
+                            fabricCanvas.calcOffset();
+                        });
+
+                        document.getElementById('upload-prompt').style.display = 'none';
+                        updateInstruction('PDF Loaded. Scale 1/4" = 1\'. Select a tool to begin drawing.');
+                    });
                 });
             });
         }
 
         function setTool(tool) {
+            if (currentTool === 'poly' && tool !== 'poly') {
+                resetPolyDrawing();
+            }
+
             currentTool = tool;
             document.querySelectorAll('.sidebar .btn').forEach(b => {
                 if (b.id && b.id.startsWith('tool-') && b.id !== 'tool-carpet-lock') {
@@ -279,24 +332,30 @@
             const activeBtn = document.getElementById(`tool-${tool}`);
             if (activeBtn) activeBtn.classList.add('active');
 
-            resetPolyDrawing();
-
             if (!fabricCanvas) return;
+
             fabricCanvas.isDrawingMode = (tool === 'pen');
             fabricCanvas.selection = (tool === 'select');
+
+            // Make existing objects selectable only in 'select' mode
+            const isSelectable = (tool === 'select');
+            fabricCanvas.forEachObject(obj => {
+                obj.selectable = isSelectable;
+                obj.evented = isSelectable;
+            });
 
             if (tool === 'pen') {
                 fabricCanvas.freeDrawingBrush.color = '#dc2626';
                 fabricCanvas.freeDrawingBrush.width = 3;
-                updateInstruction('Pen Mode: Draw freehand markups directly.');
+                updateInstruction('Pen Mode: Click & drag to write/sketch.');
             } else if (tool === 'select') {
-                updateInstruction('Select Mode: Move or resize objects.');
+                updateInstruction('Select Mode: Move or resize markups.');
             } else if (tool === 'sqft') {
-                updateInstruction('SqFt Box: Click and drag to create rectangular area.');
+                updateInstruction('SqFt Box: Click & drag rectangular room segments.');
             } else if (tool === 'poly') {
-                updateInstruction('Custom L-Shape: Click corners sequentially. Double-click to finish.');
+                updateInstruction('Custom L-Shape: Click corners sequentially. Double-click or press Enter when done.');
             } else if (tool === 'carpet') {
-                updateInstruction(`12' Carpet Cut: Click and drag segment. Locked to 12' ${carpetLockMode}.`);
+                updateInstruction(`12' Carpet Cut: Click & drag segment. Locked to 12' ${carpetLockMode}.`);
             } else if (tool === 'text') {
                 updateInstruction('Text Tool: Click anywhere on drawing to insert notes.');
             }
@@ -305,13 +364,16 @@
         function toggleCarpetLock() {
             carpetLockMode = (carpetLockMode === 'width') ? 'height' : 'width';
             document.getElementById('carpet-lock-label').innerText = `🔒 Lock: 12' ${carpetLockMode.charAt(0).toUpperCase() + carpetLockMode.slice(1)}`;
-            if (currentTool === 'carpet') {
-                updateInstruction(`12' Carpet Cut: Click and drag segment. Locked to 12' ${carpetLockMode}.`);
+            if (currentTool !== 'carpet') {
+                setTool('carpet');
+            } else {
+                updateInstruction(`12' Carpet Cut: Click & drag segment. Locked to 12' ${carpetLockMode}.`);
             }
         }
 
         function onMouseDown(opt) {
-            if (!fabricCanvas) return;
+            if (!fabricCanvas || currentTool === 'select' || currentTool === 'pen') return;
+
             const pointer = fabricCanvas.getPointer(opt.e);
 
             if (currentTool === 'text') {
@@ -319,8 +381,9 @@
                     left: pointer.x,
                     top: pointer.y,
                     fontSize: 18,
-                    fill: '#1e293b',
-                    backgroundColor: 'rgba(255, 255, 255, 0.85)'
+                    fontWeight: 'bold',
+                    fill: '#0f172a',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)'
                 });
                 fabricCanvas.add(text);
                 recordAction([text]);
@@ -335,8 +398,8 @@
                 origX = pointer.x;
                 origY = pointer.y;
 
-                let strokeColor = (currentTool === 'sqft') ? '#2563eb' : '#d97706';
-                let fillColor = (currentTool === 'sqft') ? 'rgba(37, 99, 235, 0.2)' : 'rgba(217, 119, 6, 0.25)';
+                let strokeColor = (currentTool === 'sqft') ? '#2563eb' : '#dc2626';
+                let fillColor = (currentTool === 'sqft') ? 'rgba(37, 99, 235, 0.25)' : 'rgba(220, 38, 38, 0.25)';
 
                 activeShape = new fabric.Rect({
                     left: origX,
@@ -346,11 +409,22 @@
                     fill: fillColor,
                     stroke: strokeColor,
                     strokeWidth: 2,
-                    transparentCorners: false
+                    selectable: false,
+                    evented: false
                 });
 
                 fabricCanvas.add(activeShape);
             } else if (currentTool === 'poly') {
+                // If clicking near starting point with 3+ vertices, complete polygon
+                if (polyPoints.length >= 3) {
+                    const startPt = polyPoints[0];
+                    const dist = Math.hypot(pointer.x - startPt.x, pointer.y - startPt.y);
+                    if (dist < 15) {
+                        finishPolyDrawing();
+                        return;
+                    }
+                }
+
                 if (!isDrawingPoly) {
                     isDrawingPoly = true;
                     polyPoints = [{ x: pointer.x, y: pointer.y }];
@@ -375,6 +449,10 @@
                     polyGuideLines.push(guideLine);
                     fabricCanvas.add(guideLine);
                 }
+
+                // Display "Finish L-Shape" button when at least 3 points exist
+                const finishBtn = document.getElementById('btn-finish-poly');
+                if (finishBtn) finishBtn.style.display = (polyPoints.length >= 3) ? 'flex' : 'none';
             }
         }
 
@@ -387,7 +465,7 @@
                 let h = pointer.y - origY;
 
                 if (currentTool === 'carpet') {
-                    const fixed12ftPx = 12 * SCALE_FACTOR * 1.5;
+                    const fixed12ftPx = 12 * PIXELS_PER_FOOT;
                     if (carpetLockMode === 'width') {
                         w = (w >= 0) ? fixed12ftPx : -fixed12ftPx;
                     } else {
@@ -415,10 +493,15 @@
             if (isDrawingBox && activeShape) {
                 isDrawingBox = false;
 
-                const actualScale = SCALE_FACTOR * 1.5;
-                const widthFt = (activeShape.width / actualScale).toFixed(1);
-                const heightFt = (activeShape.height / actualScale).toFixed(1);
-                const sqft = (widthFt * heightFt).toFixed(1);
+                if (activeShape.width < 5 && activeShape.height < 5) {
+                    fabricCanvas.remove(activeShape);
+                    activeShape = null;
+                    return;
+                }
+
+                const widthFt = (activeShape.width / PIXELS_PER_FOOT).toFixed(1);
+                const heightFt = (activeShape.height / PIXELS_PER_FOOT).toFixed(1);
+                const sqft = ((activeShape.width * activeShape.height) / SQPX_PER_SQFT).toFixed(1);
 
                 const labelText = (currentTool === 'sqft') 
                     ? `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`
@@ -427,7 +510,9 @@
                 const label = new fabric.Text(labelText, {
                     fontSize: 14,
                     fontWeight: 'bold',
-                    fill: (currentTool === 'sqft') ? '#1e3a8a' : '#78350f',
+                    fill: '#0f172a',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    padding: 4,
                     textAlign: 'center',
                     originX: 'center',
                     originY: 'center',
@@ -435,12 +520,17 @@
                     top: activeShape.top + (activeShape.height / 2)
                 });
 
-                const group = new fabric.Group([activeShape, label], { selectable: true });
+                const group = new fabric.Group([activeShape, label], {
+                    selectable: false,
+                    evented: false
+                });
+
                 fabricCanvas.remove(activeShape);
                 fabricCanvas.add(group);
                 recordAction([group]);
 
                 activeShape = null;
+                // Persistent drawing: Tool stays active!
             }
         }
 
@@ -456,7 +546,7 @@
                 return;
             }
 
-            const actualScale = SCALE_FACTOR * 1.5;
+            // Calculate area via Shoelace formula
             let areaPx = 0;
             let cx = 0, cy = 0;
 
@@ -468,13 +558,13 @@
                 cy += polyPoints[i].y;
             }
             areaPx = Math.abs(areaPx) / 2;
-            const sqft = (areaPx / (actualScale * actualScale)).toFixed(1);
+            const sqft = (areaPx / SQPX_PER_SQFT).toFixed(1);
 
             cx /= polyPoints.length;
             cy /= polyPoints.length;
 
             const polygon = new fabric.Polygon(polyPoints, {
-                fill: 'rgba(37, 99, 235, 0.2)',
+                fill: 'rgba(37, 99, 235, 0.25)',
                 stroke: '#2563eb',
                 strokeWidth: 2,
                 objectCaching: false
@@ -483,17 +573,25 @@
             const label = new fabric.Text(`${sqft} Sq Ft`, {
                 fontSize: 15,
                 fontWeight: 'bold',
-                fill: '#1e3a8a',
+                fill: '#0f172a',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                padding: 4,
                 originX: 'center',
                 originY: 'center',
                 left: cx,
                 top: cy
             });
 
-            const group = new fabric.Group([polygon, label], { selectable: true });
+            const group = new fabric.Group([polygon, label], {
+                selectable: false,
+                evented: false
+            });
+
             resetPolyDrawing();
             fabricCanvas.add(group);
             recordAction([group]);
+
+            // Persistent drawing: Poly tool remains selected!
         }
 
         function resetPolyDrawing() {
@@ -505,6 +603,10 @@
             }
             polyGuideLines = [];
             activePolyLine = null;
+
+            const finishBtn = document.getElementById('btn-finish-poly');
+            if (finishBtn) finishBtn.style.display = 'none';
+
             if (fabricCanvas) fabricCanvas.renderAll();
         }
 
@@ -533,8 +635,9 @@
         }
 
         function clearDrawings() {
-            if (fabricCanvas && confirm("Are you sure you want to clear all markups?")) {
-                fabricCanvas.clear();
+            if (fabricCanvas && actionHistory.length > 0) {
+                resetPolyDrawing();
+                fabricCanvas.getObjects().forEach(obj => fabricCanvas.remove(obj));
                 actionHistory = [];
                 updateInstruction('All markups cleared.');
             }
@@ -542,37 +645,29 @@
 
         function exportScaledPDF() {
             if (!pdfDoc) {
-                alert("Please upload a PDF floorplan first.");
+                updateInstruction("Please upload a PDF floorplan first.");
                 return;
             }
 
             if (typeof window.jspdf === 'undefined') {
-                alert("PDF export engine unavailable.");
+                updateInstruction("PDF export library unavailable.");
                 return;
             }
 
             const { jsPDF } = window.jspdf;
 
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = pdfCanvas.width;
-            exportCanvas.height = pdfCanvas.height;
-            const ctx = exportCanvas.getContext('2d');
-
-            ctx.drawImage(pdfCanvas, 0, 0);
-            if (fabricCanvas) {
-                ctx.drawImage(fabricCanvas.getElement(), 0, 0);
-            }
-
-            const imgData = exportCanvas.toDataURL('image/png', 1.0);
+            // Generate full resolution image of background + markups
+            const dataUrl = fabricCanvas.toDataURL({ format: 'png', multiplier: 1.0 });
             const orientation = originalPageWidthPt > originalPageHeightPt ? 'landscape' : 'portrait';
 
+            // Create jsPDF document matched to native PDF point size (72 points = 1 inch)
             const pdf = new jsPDF({
                 orientation: orientation,
                 unit: 'pt',
                 format: [originalPageWidthPt, originalPageHeightPt]
             });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, originalPageWidthPt, originalPageHeightPt);
+            pdf.addImage(dataUrl, 'PNG', 0, 0, originalPageWidthPt, originalPageHeightPt);
             pdf.save('MarkedUp_FloorPlan_14Scale.pdf');
             updateInstruction('Exported true-scale PDF document.');
         }
