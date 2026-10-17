@@ -27,7 +27,7 @@ html
             --sidebar-muted: #94a3b8;
             --border-color: #334155;
             --bg-canvas: #cbd5e1;
-            --accent-blue: #3b82f6;
+            --accent-blue: #38bdf8;
         }
 
         * {
@@ -137,6 +137,25 @@ html
             box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
         }
 
+        .key-badge {
+            margin-left: auto;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            text-transform: uppercase;
+        }
+
+        .btn.active .key-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            color: #ffffff;
+        }
+
         .btn-primary {
             background-color: var(--primary);
             color: #ffffff;
@@ -235,7 +254,7 @@ html
             padding: 4px 12px;
             border-radius: 20px;
             border: 1px solid var(--border-color);
-            color: #38bdf8;
+            color: var(--accent-blue);
             font-weight: 500;
         }
 
@@ -299,8 +318,13 @@ html
             <div>
                 <div class="section-title">Standard Tools</div>
                 <div class="btn-group">
-                    <button class="btn active" id="tool-select" onclick="setTool('select')">👆 Select / Move (Esc)</button>
-                    <button class="btn" id="tool-pen" onclick="setTool('pen')">✏️ Freehand Pen</button>
+                    <button class="btn active" id="tool-select" onclick="setTool('select')">
+                        <span>👆 Select / Move</span>
+                        <span class="key-badge">ESC</span>
+                    </button>
+                    <button class="btn" id="tool-pen" onclick="setTool('pen')">
+                        <span>✏️ Freehand Pen</span>
+                    </button>
                     
                     <!-- Pen Options Subpanel -->
                     <div class="tool-options" id="pen-options" style="display: none;">
@@ -310,7 +334,9 @@ html
                         <input type="range" id="pen-width" min="1" max="10" value="3" onchange="updatePenSettings()">
                     </div>
 
-                    <button class="btn" id="tool-text" onclick="setTool('text')">🔤 Add Text Note</button>
+                    <button class="btn" id="tool-text" onclick="setTool('text')">
+                        <span>🔤 Add Text Note</span>
+                    </button>
                 </div>
             </div>
 
@@ -318,11 +344,20 @@ html
             <div>
                 <div class="section-title">Measurement Tools</div>
                 <div class="btn-group">
-                    <button class="btn" id="tool-area" onclick="setTool('area')">🔳 Sq Ft Box (Rectangle)</button>
-                    <button class="btn" id="tool-poly" onclick="setTool('poly')">📐 Custom Area (L-Shape)</button>
-                    <button class="btn" id="tool-carpet" onclick="setTool('carpet')">✂️ 12' Carpet Cut</button>
+                    <button class="btn" id="tool-area" onclick="setTool('area')">
+                        <span>🔳 Sq Ft Box (Rectangle)</span>
+                    </button>
+                    <button class="btn" id="tool-poly" onclick="setTool('poly')">
+                        <span>📐 Custom Area (L-Shape)</span>
+                        <span class="key-badge">A</span>
+                    </button>
+                    <button class="btn" id="tool-carpet" onclick="setTool('carpet')">
+                        <span>✂️ 12' Carpet Cut</span>
+                        <span class="key-badge">C</span>
+                    </button>
                     <button class="btn sub-toggle" id="btn-carpet-toggle" onclick="toggleCarpetOrientation()">
-                        🔄 Lock: 12' Height
+                        <span id="carpet-lock-label">🔄 Lock: 12' Height</span>
+                        <span class="key-badge">W</span>
                     </button>
                 </div>
             </div>
@@ -333,6 +368,10 @@ html
             <div>
                 <div class="section-title">Actions</div>
                 <div class="btn-group">
+                    <button class="btn" onclick="undoLastAction()">
+                        <span>↩️ Undo Last Action</span>
+                        <span class="key-badge">Ctrl+Z</span>
+                    </button>
                     <button class="btn btn-primary" onclick="exportImage()">💾 Export as Image (PNG)</button>
                     <button class="btn btn-danger-outline" onclick="clearAnnotations()">🗑️ Clear All Markups</button>
                 </div>
@@ -374,6 +413,9 @@ html
         let activeShape = null;
         let activeText = null;
 
+        // Undo History Stack
+        const undoStack = [];
+
         // L-Shape / Polygon Tool State
         let polyPoints = [];
         let tempLines = [];
@@ -389,6 +431,11 @@ html
         // Initialize Pen Brush Settings
         canvas.freeDrawingBrush.color = '#ef4444';
         canvas.freeDrawingBrush.width = 3;
+
+        // Track freehand paths for Undo history
+        canvas.on('path:created', function(e) {
+            pushUndoAction([e.path]);
+        });
 
         // --- PDF Upload Handling ---
         document.getElementById('pdf-upload').addEventListener('change', function(e) {
@@ -416,7 +463,7 @@ html
                             fabric.Image.fromURL(offscreenCanvas.toDataURL(), function(img) {
                                 canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
                                 document.getElementById('upload-prompt').style.display = 'none';
-                                updateStatus('PDF Loaded. Tools will stay active continuously after drawing.');
+                                updateStatus('PDF Loaded. Shortkey hotkeys active: [A] Custom Area, [C] Carpet Cut, [W] Lock Toggle, [Ctrl+Z] Undo.');
                             });
                         });
                     });
@@ -428,28 +475,95 @@ html
             fileReader.readAsArrayBuffer(file);
         });
 
-        // --- Global Keyboard Listeners ---
-        window.addEventListener('keydown', function(e) {
-            // Delete / Backspace removes selected object & linked label
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                const activeObj = canvas.getActiveObject();
-                if (activeObj && activeObj.isEditing) return; // Don't delete while typing text
+        // --- Undo Functionality ---
+        function pushUndoAction(objectsArray) {
+            if (objectsArray && objectsArray.length > 0) {
+                undoStack.push(objectsArray);
+            }
+        }
 
-                if (activeObj) {
-                    if (activeObj.associatedText) canvas.remove(activeObj.associatedText);
-                    if (activeObj.associatedShape) canvas.remove(activeObj.associatedShape);
-                    canvas.remove(activeObj);
-                    canvas.discardActiveObject();
-                    canvas.renderAll();
-                }
+        function undoLastAction() {
+            if (undoStack.length === 0) {
+                updateStatus('Nothing to undo.');
+                return;
             }
 
-            // Escape key cancels active drawing or reverts to Select tool
-            if (e.key === 'Escape') {
-                if (currentTool === 'poly' && polyPoints.length > 0) {
-                    cancelPolygon();
-                } else {
-                    setTool('select');
+            const lastActionObjects = undoStack.pop();
+            lastActionObjects.forEach(function(obj) {
+                if (obj) {
+                    if (obj.associatedText) canvas.remove(obj.associatedText);
+                    if (obj.associatedShape) canvas.remove(obj.associatedShape);
+                    canvas.remove(obj);
+                }
+            });
+
+            canvas.discardActiveObject();
+            canvas.renderAll();
+            updateStatus('Undid last action.');
+        }
+
+        // --- Global Keyboard Listeners (Hotkeys) ---
+        window.addEventListener('keydown', function(e) {
+            // Check if user is actively typing inside an input or editable Fabric text box
+            const activeElement = document.activeElement;
+            const isTypingInput = activeElement && (
+                activeElement.tagName === 'INPUT' || 
+                activeElement.tagName === 'TEXTAREA' || 
+                activeElement.isContentEditable
+            );
+
+            const activeObj = canvas.getActiveObject();
+            const isEditingText = activeObj && activeObj.isEditing;
+
+            // Block hotkeys when actively typing text
+            if (isTypingInput || isEditingText) return;
+
+            const key = e.key.toLowerCase();
+            const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+            // Undo: Ctrl+Z / Cmd+Z
+            if (isCmdOrCtrl && key === 'z') {
+                e.preventDefault();
+                undoLastAction();
+                return;
+            }
+
+            // Standard Single-key Hotkeys (No Modifier keys)
+            if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                // Key 'C' -> Carpet Cut Tool
+                if (key === 'c') {
+                    e.preventDefault();
+                    setTool('carpet');
+                }
+                // Key 'W' -> Cycle carpet lock dimension & switch to Carpet tool
+                else if (key === 'w') {
+                    e.preventDefault();
+                    toggleCarpetOrientation();
+                }
+                // Key 'A' -> Custom Area (L-Shape / Polygon) Tool
+                else if (key === 'a') {
+                    e.preventDefault();
+                    setTool('poly');
+                }
+                // Delete / Backspace -> Delete selected object
+                else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    if (activeObj) {
+                        if (activeObj.associatedText) canvas.remove(activeObj.associatedText);
+                        if (activeObj.associatedShape) canvas.remove(activeObj.associatedShape);
+                        canvas.remove(activeObj);
+                        canvas.discardActiveObject();
+                        canvas.renderAll();
+                    }
+                }
+                // Escape key -> Cancel active polygon or revert to Select/Move mode
+                else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    if (currentTool === 'poly' && polyPoints.length > 0) {
+                        cancelPolygon();
+                    } else {
+                        setTool('select');
+                    }
                 }
             }
         });
@@ -499,12 +613,12 @@ html
             document.getElementById('active-tool-pill').innerText = 'Active: ' + toolNames[tool];
 
             const hints = {
-                'select': 'Click and drag objects to move or resize. Press Delete to remove.',
-                'pen': 'Click and drag to write or sketch on the floorplan.',
+                'select': 'Click & drag objects to move or resize. Press Delete to remove.',
+                'pen': 'Click & drag to sketch or write on the floorplan.',
                 'text': 'Click anywhere on the plan to add custom text notes.',
-                'area': 'Click and drag to measure rectangular rooms. (Tool stays active)',
-                'poly': 'Click consecutive points around L-shaped rooms. Double-click or click start point to complete.',
-                'carpet': "Click and drag to place 12' wide carpet cuts. (Tool stays active)"
+                'area': 'Click & drag rectangular rooms. Tool stays active continuously.',
+                'poly': 'Click points around L-shaped rooms. Double-click or click start point to complete [A].',
+                'carpet': "Click & drag 12' wide carpet cuts [C]. Press [W] to toggle lock height/width."
             };
             updateStatus(hints[tool]);
         }
@@ -520,11 +634,13 @@ html
 
         function toggleCarpetOrientation() {
             carpetOrientation = (carpetOrientation === 'horizontal') ? 'vertical' : 'horizontal';
-            const btn = document.getElementById('btn-carpet-toggle');
-            btn.innerHTML = (carpetOrientation === 'horizontal') ? "🔄 Lock: 12' Height" : "🔄 Lock: 12' Width";
+            const label = document.getElementById('carpet-lock-label');
+            label.innerText = (carpetOrientation === 'horizontal') ? "🔄 Lock: 12' Height" : "🔄 Lock: 12' Width";
             
             if (currentTool !== 'carpet') {
                 setTool('carpet');
+            } else {
+                updateStatus(carpetOrientation === 'horizontal' ? "Carpet tool set to Lock 12' Height" : "Carpet tool set to Lock 12' Width");
             }
         }
 
@@ -552,7 +668,7 @@ html
                 canvas.setActiveObject(text);
                 text.enterEditing();
                 text.selectAll();
-                // Notice: currentTool remains 'text' so user can add another note immediately!
+                pushUndoAction([text]);
                 return;
             }
 
@@ -673,6 +789,9 @@ html
                             activeShape.setControlsVisibility({ ml: false, mr: false, tl: false, tr: false, bl: false, br: false });
                         }
                     }
+
+                    // Push shape + linked text pair onto Undo stack
+                    pushUndoAction([activeShape, activeText]);
                 }
             }
             activeShape = null;
@@ -690,7 +809,7 @@ html
         // --- Custom Polygon / L-Shape Logic ---
 
         function handlePolyClick(pointer) {
-            // Check if clicking near the starting point to close shape
+            // Check if clicking near starting point to close shape
             if (polyPoints.length >= 3) {
                 const startPt = polyPoints[0];
                 const dist = Math.hypot(pointer.x - startPt.x, pointer.y - startPt.y);
@@ -793,6 +912,8 @@ html
             text.associatedShape = polygon;
 
             canvas.add(polygon, text);
+            pushUndoAction([polygon, text]);
+
             polyPoints = [];
             canvas.renderAll();
 
@@ -897,6 +1018,7 @@ html
                 canvas.getObjects().forEach(function(obj) {
                     canvas.remove(obj);
                 });
+                undoStack.length = 0;
                 updateStatus('All markups cleared.');
             }
         }
