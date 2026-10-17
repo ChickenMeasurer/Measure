@@ -4,7 +4,7 @@ html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flooring PDF Markup Tool</title>
+    <title>FloorMark Pro - PDF Flooring Markup Tool</title>
     
     <!-- PDF.js for rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -13,7 +13,7 @@ html
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 
     <style>
-        /* CSS Reset & Base Variables */
+        /* Modern Dark/Light Theme Styling */
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
@@ -21,11 +21,13 @@ html
             --secondary-hover: #059669;
             --danger: #ef4444;
             --danger-hover: #dc2626;
-            --bg-dark: #1f2937;
-            --bg-light: #f3f4f6;
-            --border: #e5e7eb;
-            --text-main: #111827;
-            --text-muted: #6b7280;
+            --bg-sidebar: #0f172a;
+            --sidebar-card: #1e293b;
+            --sidebar-text: #f8fafc;
+            --sidebar-muted: #94a3b8;
+            --border-color: #334155;
+            --bg-canvas: #cbd5e1;
+            --accent-blue: #3b82f6;
         }
 
         * {
@@ -35,88 +37,68 @@ html
         }
 
         body {
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text-main);
-            background-color: var(--bg-light);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background-color: var(--bg-canvas);
             height: 100vh;
             display: flex;
             overflow: hidden;
         }
 
-        /* Layout */
+        /* Layout Architecture */
         .sidebar {
-            width: 280px;
-            background-color: #ffffff;
-            border-right: 1px solid var(--border);
+            width: 320px;
+            min-width: 320px;
+            background-color: var(--bg-sidebar);
+            color: var(--sidebar-text);
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-            z-index: 10;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+            z-index: 20;
         }
 
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid var(--border);
+            background-color: #020617;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .sidebar-header h1 {
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 5px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .sidebar-header p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
+        .scale-badge {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-top: 6px;
         }
 
         .sidebar-content {
-            padding: 20px;
+            padding: 18px;
             flex-grow: 1;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 18px;
         }
 
-        .main-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .canvas-wrapper {
-            flex-grow: 1;
-            overflow: auto;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 40px;
-            background-color: #e5e7eb;
-        }
-
-        .status-bar {
-            height: 30px;
-            background-color: #ffffff;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        /* Buttons & Controls */
         .section-title {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            letter-spacing: 0.05em;
+            font-weight: 700;
+            color: var(--sidebar-muted);
+            margin-bottom: 8px;
+            letter-spacing: 0.08em;
         }
 
         .btn-group {
@@ -125,33 +107,34 @@ html
             gap: 8px;
         }
 
+        /* Interactive Buttons */
         .btn {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            justify-content: center;
             width: 100%;
-            padding: 10px 15px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background-color: #ffffff;
-            color: var(--text-main);
-            font-size: 0.9rem;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--sidebar-card);
+            color: var(--sidebar-text);
+            font-size: 0.88rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease-in-out;
             text-align: left;
-            justify-content: flex-start;
+            gap: 10px;
         }
 
         .btn:hover {
-            background-color: var(--bg-light);
+            background-color: #334155;
+            border-color: #475569;
         }
 
         .btn.active {
-            background-color: #eff6ff;
-            border-color: var(--primary);
-            color: var(--primary);
-            box-shadow: inset 0 0 0 1px var(--primary);
+            background-color: var(--primary);
+            border-color: #60a5fa;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
         }
 
         .btn-primary {
@@ -159,6 +142,7 @@ html
             color: #ffffff;
             border-color: var(--primary);
             justify-content: center;
+            font-weight: 600;
         }
         .btn-primary:hover {
             background-color: var(--primary-hover);
@@ -169,63 +153,143 @@ html
             color: #ffffff;
             border-color: var(--secondary);
             justify-content: center;
+            font-weight: 600;
         }
         .btn-success:hover {
             background-color: var(--secondary-hover);
         }
 
         .btn-danger-outline {
-            color: var(--danger);
-            border-color: #fca5a5;
-            background-color: #fef2f2;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+            background-color: #450a0a;
             justify-content: center;
         }
         .btn-danger-outline:hover {
-            background-color: #fee2e2;
-            border-color: var(--danger);
+            background-color: #7f1d1d;
+            color: #ffffff;
         }
 
-        /* Utility */
-        input[type="file"] {
-            display: none;
+        .sub-toggle {
+            font-size: 0.8rem;
+            background-color: #0f172a;
+            border-color: var(--border-color);
+            padding: 8px 12px;
+            margin-top: 4px;
+        }
+
+        /* Tool Options Sub-panel */
+        .tool-options {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #020617;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-top: 4px;
+            font-size: 0.8rem;
+        }
+
+        .tool-options label {
+            color: var(--sidebar-muted);
+        }
+
+        .tool-options input[type="color"] {
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .tool-options input[type="range"] {
+            width: 80px;
+        }
+
+        /* Main Workspace */
+        .main-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100vh;
+        }
+
+        .top-bar {
+            height: 42px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .status-pill {
+            background-color: #1e293b;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            color: #38bdf8;
+            font-weight: 500;
+        }
+
+        .canvas-wrapper {
+            flex-grow: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px;
+            position: relative;
+        }
+
+        .canvas-container {
+            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+            background-color: #ffffff;
+            border-radius: 4px;
         }
 
         .empty-state {
             position: absolute;
-            top: 50%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            color: var(--text-muted);
+            color: #475569;
             pointer-events: none;
         }
 
         .empty-state h2 {
+            font-size: 1.5rem;
             margin-bottom: 8px;
-            color: var(--text-main);
+            color: #1e293b;
         }
 
-        /* PDF Canvas Styles */
-        .canvas-container {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            background-color: #fff;
+        input[type="file"] {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Tools -->
+    <!-- Sidebar Control Panel -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1>FloorMark Pro</h1>
-            <p>Scale: 1/4" = 1'</p>
+            <h1>📐 FloorMark Pro</h1>
+            <span class="scale-badge">Scale: 1/4" = 1' (18px = 1ft)</span>
         </div>
 
         <div class="sidebar-content">
-            <!-- Upload -->
+            <!-- Upload PDF -->
             <div>
                 <label class="btn btn-success">
-                    <svg style="width:18px;height:18px;margin-right:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                     Upload PDF Floorplan
                     <input type="file" id="pdf-upload" accept="application/pdf">
                 </label>
@@ -235,9 +299,18 @@ html
             <div>
                 <div class="section-title">Standard Tools</div>
                 <div class="btn-group">
-                    <button class="btn active" id="tool-select" onclick="setTool('select')">👆 Select / Move</button>
-                    <button class="btn" id="tool-pen" onclick="setTool('pen')">✏️ Pen Tool</button>
-                    <button class="btn" id="tool-text" onclick="setTool('text')">🔤 Add Text</button>
+                    <button class="btn active" id="tool-select" onclick="setTool('select')">👆 Select / Move (Esc)</button>
+                    <button class="btn" id="tool-pen" onclick="setTool('pen')">✏️ Freehand Pen</button>
+                    
+                    <!-- Pen Options Subpanel -->
+                    <div class="tool-options" id="pen-options" style="display: none;">
+                        <label>Color:</label>
+                        <input type="color" id="pen-color" value="#ef4444" onchange="updatePenSettings()">
+                        <label>Size:</label>
+                        <input type="range" id="pen-width" min="1" max="10" value="3" onchange="updatePenSettings()">
+                    </div>
+
+                    <button class="btn" id="tool-text" onclick="setTool('text')">🔤 Add Text Note</button>
                 </div>
             </div>
 
@@ -245,9 +318,10 @@ html
             <div>
                 <div class="section-title">Measurement Tools</div>
                 <div class="btn-group">
-                    <button class="btn" id="tool-area" onclick="setTool('area')">📏 Square Footage Box</button>
+                    <button class="btn" id="tool-area" onclick="setTool('area')">🔳 Sq Ft Box (Rectangle)</button>
+                    <button class="btn" id="tool-poly" onclick="setTool('poly')">📐 Custom Area (L-Shape)</button>
                     <button class="btn" id="tool-carpet" onclick="setTool('carpet')">✂️ 12' Carpet Cut</button>
-                    <button class="btn" id="btn-carpet-toggle" onclick="toggleCarpetOrientation()" style="font-size: 0.8rem; background: #f8fafc;">
+                    <button class="btn sub-toggle" id="btn-carpet-toggle" onclick="toggleCarpetOrientation()">
                         🔄 Lock: 12' Height
                     </button>
                 </div>
@@ -259,163 +333,202 @@ html
             <div>
                 <div class="section-title">Actions</div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="exportImage()">💾 Export as Image</button>
-                    <button class="btn btn-danger-outline" onclick="clearAnnotations()">🗑️ Clear Drawings</button>
+                    <button class="btn btn-primary" onclick="exportImage()">💾 Export as Image (PNG)</button>
+                    <button class="btn btn-danger-outline" onclick="clearAnnotations()">🗑️ Clear All Markups</button>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- Main Canvas Area -->
+    <!-- Main Workspace Area -->
     <main class="main-area">
+        <div class="top-bar">
+            <span id="status-msg">Upload a PDF drawing to begin marking up.</span>
+            <span class="status-pill" id="active-tool-pill">Active: Select / Move</span>
+        </div>
+
         <div class="canvas-wrapper" id="canvas-wrapper">
             <div id="upload-prompt" class="empty-state">
-                <h2>No PDF Loaded</h2>
-                <p>Upload a PDF using the button on the left to begin.</p>
+                <h2>No Floorplan Loaded</h2>
+                <p>Click "Upload PDF Floorplan" on the left to start.</p>
             </div>
-            <!-- Canvas -->
+            <!-- Interactive Fabric Canvas -->
             <canvas id="pdf-canvas"></canvas>
-        </div>
-        <div class="status-bar" id="status-msg">
-            Ready. Upload a PDF to start marking up. Select items and press Delete/Backspace to remove them.
         </div>
     </main>
 
     <script>
-        // Set PDF.js Worker Configuration safely
+        // Configure PDF.js Worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // Constants: 1/4" = 1' at 72 DPI means 1 foot = 18 pixels
+        // Constants: 1/4" = 1' at 72 DPI PDF render = 18 pixels per foot
         const PIXELS_PER_FOOT = 18;
+        const SQPX_PER_SQFT = 324; // 18 * 18
         const CARPET_LOCK_PX = 12 * PIXELS_PER_FOOT; // 216 pixels
 
         // App State
         let currentTool = 'select';
-        let carpetOrientation = 'horizontal'; // horizontal = lock height, vertical = lock width
+        let carpetOrientation = 'horizontal'; // horizontal = lock height to 12', vertical = lock width to 12'
         let isDrawing = false;
         let origX, origY;
         let activeShape = null;
         let activeText = null;
 
-        // Initialize Fabric.js
+        // L-Shape / Polygon Tool State
+        let polyPoints = [];
+        let tempLines = [];
+        let activeLine = null;
+        let firstPointCircle = null;
+
+        // Initialize Fabric Canvas
         const canvas = new fabric.Canvas('pdf-canvas', {
-            selection: false, // Prevents dragging a box over multiple items (protects text link sync)
+            selection: true,
             preserveObjectStacking: true
         });
 
-        // Setup Pen
-        canvas.freeDrawingBrush.color = '#ef4444'; // Red
+        // Initialize Pen Brush Settings
+        canvas.freeDrawingBrush.color = '#ef4444';
         canvas.freeDrawingBrush.width = 3;
 
-        // --- Event Listeners ---
-
-        // File Upload
+        // --- PDF Upload Handling ---
         document.getElementById('pdf-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
-            document.getElementById('status-msg').innerText = 'Loading PDF... Please wait.';
+
+            updateStatus('Loading PDF drawing... Please wait.');
             const fileReader = new FileReader();
-            
+
             fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
                 pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
                     pdf.getPage(1).then(function(page) {
-                        const viewport = page.getViewport({ scale: 1.0 }); // 1.0 scale maintains 72 DPI math
-                        
+                        const viewport = page.getViewport({ scale: 1.0 });
+
                         const offscreenCanvas = document.createElement('canvas');
                         const ctx = offscreenCanvas.getContext('2d');
                         offscreenCanvas.width = viewport.width;
                         offscreenCanvas.height = viewport.height;
-                        
+
                         page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
                             canvas.setWidth(offscreenCanvas.width);
                             canvas.setHeight(offscreenCanvas.height);
-                            
+
                             fabric.Image.fromURL(offscreenCanvas.toDataURL(), function(img) {
                                 canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
                                 document.getElementById('upload-prompt').style.display = 'none';
-                                document.getElementById('status-msg').innerText = 'PDF Loaded. Select a tool to begin drawing.';
+                                updateStatus('PDF Loaded. Tools will stay active continuously after drawing.');
                             });
                         });
                     });
                 }).catch(function(err) {
-                    document.getElementById('status-msg').innerText = 'Error: ' + err.message;
+                    updateStatus('Error loading PDF: ' + err.message);
                     console.error(err);
                 });
             };
             fileReader.readAsArrayBuffer(file);
         });
 
-        // Keydown (Delete Items)
+        // --- Global Keyboard Listeners ---
         window.addEventListener('keydown', function(e) {
+            // Delete / Backspace removes selected object & linked label
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const activeObj = canvas.getActiveObject();
-                if (activeObj && activeObj.isEditing) return; // Don't delete if typing text
-                
+                if (activeObj && activeObj.isEditing) return; // Don't delete while typing text
+
                 if (activeObj) {
                     if (activeObj.associatedText) canvas.remove(activeObj.associatedText);
-                    if (activeObj.associatedRect) canvas.remove(activeObj.associatedRect);
+                    if (activeObj.associatedShape) canvas.remove(activeObj.associatedShape);
                     canvas.remove(activeObj);
                     canvas.discardActiveObject();
+                    canvas.renderAll();
+                }
+            }
+
+            // Escape key cancels active drawing or reverts to Select tool
+            if (e.key === 'Escape') {
+                if (currentTool === 'poly' && polyPoints.length > 0) {
+                    cancelPolygon();
+                } else {
+                    setTool('select');
                 }
             }
         });
 
-        // --- Tool Management ---
-
+        // --- Tool Selection Management ---
         function setTool(tool) {
+            // Cleanup any half-drawn polygon if switching tools
+            if (currentTool === 'poly' && tool !== 'poly') {
+                cancelPolygon();
+            }
+
             currentTool = tool;
             isDrawing = false;
-            
-            // Update buttons visually
-            const tools = ['select', 'pen', 'text', 'area', 'carpet'];
+
+            // Toggle Pen Options Visibility
+            document.getElementById('pen-options').style.display = (tool === 'pen') ? 'flex' : 'none';
+
+            // Update UI Button Styles
+            const tools = ['select', 'pen', 'text', 'area', 'poly', 'carpet'];
             tools.forEach(function(t) {
                 const btn = document.getElementById('tool-' + t);
-                if (t === tool) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
+                if (btn) {
+                    if (t === tool) btn.classList.add('active');
+                    else btn.classList.remove('active');
                 }
             });
 
-            // Set canvas modes
+            // Set Fabric Canvas Drawing Modes
             canvas.isDrawingMode = (tool === 'pen');
-            
-            // Lock selectability of objects if we are in drawing modes to prevent accidental dragging
-            const isDrawingTool = (tool === 'area' || tool === 'carpet');
+
+            // Toggle selectability on existing objects based on tool
+            const isSelectMode = (tool === 'select');
             canvas.forEachObject(function(obj) {
-                obj.selectable = !isDrawingTool;
-                obj.evented = !isDrawingTool;
+                obj.selectable = isSelectMode;
+                obj.evented = isSelectMode;
             });
 
-            // Status message
-            const msgs = {
-                'select': 'Select Mode: Click and drag to move or resize objects. Press Delete to remove.',
-                'pen': 'Pen Mode: Click and drag to freehand draw on the plans.',
-                'text': 'Text Mode: Click anywhere on the drawing to type notes.',
-                'area': 'Area Mode: Click and drag to calculate Square Footage.',
-                'carpet': "Carpet Mode: Click and drag. One dimension is permanently locked to 12'."
+            // Update Status Messages
+            const toolNames = {
+                'select': 'Select / Move Mode',
+                'pen': 'Freehand Pen Tool',
+                'text': 'Text Note Tool',
+                'area': 'Sq Ft Box Tool (Rectangle)',
+                'poly': 'Custom Area (L-Shape Polygon)',
+                'carpet': "12' Carpet Cut Tool"
             };
-            document.getElementById('status-msg').innerText = msgs[tool];
+            document.getElementById('active-tool-pill').innerText = 'Active: ' + toolNames[tool];
+
+            const hints = {
+                'select': 'Click and drag objects to move or resize. Press Delete to remove.',
+                'pen': 'Click and drag to write or sketch on the floorplan.',
+                'text': 'Click anywhere on the plan to add custom text notes.',
+                'area': 'Click and drag to measure rectangular rooms. (Tool stays active)',
+                'poly': 'Click consecutive points around L-shaped rooms. Double-click or click start point to complete.',
+                'carpet': "Click and drag to place 12' wide carpet cuts. (Tool stays active)"
+            };
+            updateStatus(hints[tool]);
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status-msg').innerText = msg;
+        }
+
+        function updatePenSettings() {
+            canvas.freeDrawingBrush.color = document.getElementById('pen-color').value;
+            canvas.freeDrawingBrush.width = parseInt(document.getElementById('pen-width').value, 10);
         }
 
         function toggleCarpetOrientation() {
             carpetOrientation = (carpetOrientation === 'horizontal') ? 'vertical' : 'horizontal';
             const btn = document.getElementById('btn-carpet-toggle');
-            
-            if (carpetOrientation === 'horizontal') {
-                btn.innerHTML = "🔄 Lock: 12' Height";
-            } else {
-                btn.innerHTML = "🔄 Lock: 12' Width";
-            }
+            btn.innerHTML = (carpetOrientation === 'horizontal') ? "🔄 Lock: 12' Height" : "🔄 Lock: 12' Width";
             
             if (currentTool !== 'carpet') {
                 setTool('carpet');
             }
         }
 
-        // --- Drawing Logic ---
+        // --- Mouse Event Handlers ---
 
         canvas.on('mouse:down', function(o) {
             if (currentTool === 'select' || currentTool === 'pen') return;
@@ -424,29 +537,37 @@ html
             origX = pointer.x;
             origY = pointer.y;
 
+            // --- Text Tool ---
             if (currentTool === 'text') {
-                const text = new fabric.IText('Type here...', {
+                const text = new fabric.IText('Type note...', {
                     left: origX,
                     top: origY,
                     fontFamily: 'system-ui, sans-serif',
-                    fontSize: 24,
-                    fill: '#dc2626', // Red
+                    fontSize: 22,
+                    fill: '#dc2626',
                     fontWeight: 'bold',
                     selectable: true
                 });
                 canvas.add(text);
-                setTool('select');
                 canvas.setActiveObject(text);
                 text.enterEditing();
                 text.selectAll();
+                // Notice: currentTool remains 'text' so user can add another note immediately!
                 return;
             }
 
+            // --- L-Shape / Polygon Tool ---
+            if (currentTool === 'poly') {
+                handlePolyClick(pointer);
+                return;
+            }
+
+            // --- Rectangular Area & Carpet Tools ---
             if (currentTool === 'area' || currentTool === 'carpet') {
                 isDrawing = true;
-                
+
                 const isArea = (currentTool === 'area');
-                const fillColor = isArea ? 'rgba(37, 99, 235, 0.2)' : 'rgba(220, 38, 38, 0.2)'; // Blue or Red
+                const fillColor = isArea ? 'rgba(37, 99, 235, 0.25)' : 'rgba(220, 38, 38, 0.25)';
                 const strokeColor = isArea ? '#2563eb' : '#dc2626';
 
                 activeShape = new fabric.Rect({
@@ -457,7 +578,7 @@ html
                     fill: fillColor,
                     stroke: strokeColor,
                     strokeWidth: 2,
-                    selectable: false, // Cannot be selected while drawing
+                    selectable: false,
                     originX: 'left',
                     originY: 'top'
                 });
@@ -466,54 +587,64 @@ html
                     left: origX,
                     top: origY,
                     fontFamily: 'system-ui, sans-serif',
-                    fontSize: 16,
-                    fill: '#111827', // Dark text
+                    fontSize: 15,
                     fontWeight: 'bold',
+                    fill: '#0f172a',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    padding: 4,
                     originX: 'center',
                     originY: 'center',
                     selectable: false
                 });
 
-                // Link objects together
                 activeShape.isArea = isArea;
                 activeShape.isCarpet = !isArea;
                 activeShape.carpetOrientation = carpetOrientation;
                 activeShape.associatedText = activeText;
-                activeText.associatedRect = activeShape;
+                activeText.associatedShape = activeShape;
 
                 canvas.add(activeShape, activeText);
             }
         });
 
         canvas.on('mouse:move', function(o) {
+            const pointer = canvas.getPointer(o.e);
+
+            // Handle Rubberband Line for Polygon Tool
+            if (currentTool === 'poly' && activeLine) {
+                activeLine.set({ x2: pointer.x, y2: pointer.y });
+                activeLine.setCoords();
+                canvas.renderAll();
+                return;
+            }
+
             if (!isDrawing || !activeShape) return;
 
-            const pointer = canvas.getPointer(o.e);
             let w = Math.abs(pointer.x - origX);
             let h = Math.abs(pointer.y - origY);
 
-            // Force 12 foot lock
+            // Enforce 12' Roll Lock for Carpet Cut
             if (currentTool === 'carpet') {
                 if (carpetOrientation === 'horizontal') {
                     h = CARPET_LOCK_PX;
-                    activeShape.set({ top: origY }); 
+                    activeShape.set({ top: origY });
                 } else {
                     w = CARPET_LOCK_PX;
-                    activeShape.set({ left: origX }); 
+                    activeShape.set({ left: origX });
                 }
             }
 
             activeShape.set({ width: w, height: h });
 
-            // Allow dragging up and left
+            // Support dragging in any direction (Up/Left)
             if (currentTool === 'area') {
                 if (pointer.x < origX) activeShape.set({ left: pointer.x });
                 if (pointer.y < origY) activeShape.set({ top: pointer.y });
             } else if (currentTool === 'carpet') {
-                if (carpetOrientation === 'horizontal') {
-                    if (pointer.x < origX) activeShape.set({ left: pointer.x });
-                } else {
-                    if (pointer.y < origY) activeShape.set({ top: pointer.y });
+                if (carpetOrientation === 'horizontal' && pointer.x < origX) {
+                    activeShape.set({ left: pointer.x });
+                } else if (carpetOrientation === 'vertical' && pointer.y < origY) {
+                    activeShape.set({ top: pointer.y });
                 }
             }
 
@@ -525,16 +656,16 @@ html
         canvas.on('mouse:up', function(o) {
             if (!isDrawing) return;
             isDrawing = false;
-            
+
             if (activeShape) {
-                // If shape is too small (accidental click), discard it
+                // Remove shape if it was an accidental quick tap
                 if (activeShape.width < 10 && activeShape.height < 10) {
                     canvas.remove(activeShape);
                     canvas.remove(activeText);
                 } else {
-                    activeShape.selectable = true;
-                    
-                    // Constrain scale controls on carpet blocks to prevent ruining the 12' lock
+                    activeShape.selectable = (currentTool === 'select');
+
+                    // Restrain scale controls for Carpet Cuts to keep 12' dimension intact
                     if (activeShape.isCarpet) {
                         if (activeShape.carpetOrientation === 'horizontal') {
                             activeShape.setControlsVisibility({ mt: false, mb: false, tl: false, tr: false, bl: false, br: false });
@@ -546,66 +677,236 @@ html
             }
             activeShape = null;
             activeText = null;
-            
-            // Revert back to Select tool automatically after drawing a box
-            setTool('select');
+            // Tool STAYS SELECTED for continuous measurements!
         });
 
-        // --- Recalculating Text during Move/Scale ---
+        // Double Click finishes Polygon creation
+        canvas.on('mouse:dblclick', function(o) {
+            if (currentTool === 'poly' && polyPoints.length >= 3) {
+                finishPolygon();
+            }
+        });
+
+        // --- Custom Polygon / L-Shape Logic ---
+
+        function handlePolyClick(pointer) {
+            // Check if clicking near the starting point to close shape
+            if (polyPoints.length >= 3) {
+                const startPt = polyPoints[0];
+                const dist = Math.hypot(pointer.x - startPt.x, pointer.y - startPt.y);
+                if (dist < 18) {
+                    finishPolygon();
+                    return;
+                }
+            }
+
+            polyPoints.push({ x: pointer.x, y: pointer.y });
+
+            // Mark initial starting vertex
+            if (polyPoints.length === 1) {
+                firstPointCircle = new fabric.Circle({
+                    left: pointer.x,
+                    top: pointer.y,
+                    radius: 6,
+                    fill: '#2563eb',
+                    stroke: '#ffffff',
+                    strokeWidth: 2,
+                    originX: 'center',
+                    originY: 'center',
+                    selectable: false,
+                    evented: false
+                });
+                canvas.add(firstPointCircle);
+            }
+
+            // Draw solid line segment between previous point and current point
+            if (polyPoints.length > 1) {
+                const prev = polyPoints[polyPoints.length - 2];
+                const line = new fabric.Line([prev.x, prev.y, pointer.x, pointer.y], {
+                    stroke: '#2563eb',
+                    strokeWidth: 2,
+                    selectable: false,
+                    evented: false
+                });
+                tempLines.push(line);
+                canvas.add(line);
+            }
+
+            // Setup active rubberband line attached to mouse pointer
+            if (activeLine) canvas.remove(activeLine);
+            activeLine = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+                stroke: '#2563eb',
+                strokeWidth: 2,
+                strokeDashArray: [4, 4],
+                selectable: false,
+                evented: false
+            });
+            canvas.add(activeLine);
+            canvas.renderAll();
+        }
+
+        function finishPolygon() {
+            if (polyPoints.length < 3) {
+                cancelPolygon();
+                return;
+            }
+
+            // Clean up temporary drawing helpers
+            if (activeLine) canvas.remove(activeLine);
+            if (firstPointCircle) canvas.remove(firstPointCircle);
+            tempLines.forEach(l => canvas.remove(l));
+            tempLines = [];
+            activeLine = null;
+            firstPointCircle = null;
+
+            // Calculate precise pixel area and centroid
+            const areaPx = getPolygonArea(polyPoints);
+            const sqFt = areaPx / SQPX_PER_SQFT;
+            const centroid = getPolygonCentroid(polyPoints);
+
+            // Render Fabric Polygon
+            const polygon = new fabric.Polygon(polyPoints.map(p => ({ x: p.x, y: p.y })), {
+                fill: 'rgba(37, 99, 235, 0.25)',
+                stroke: '#2563eb',
+                strokeWidth: 2,
+                selectable: (currentTool === 'select'),
+                objectCaching: false
+            });
+
+            const text = new fabric.Text(sqFt.toFixed(1) + ' Sq Ft', {
+                left: centroid.x,
+                top: centroid.y,
+                fontFamily: 'system-ui, sans-serif',
+                fontSize: 15,
+                fontWeight: 'bold',
+                fill: '#0f172a',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                padding: 4,
+                originX: 'center',
+                originY: 'center',
+                selectable: (currentTool === 'select')
+            });
+
+            polygon.isPolyArea = true;
+            polygon.baseSqFt = sqFt;
+            polygon.associatedText = text;
+            text.associatedShape = polygon;
+
+            canvas.add(polygon, text);
+            polyPoints = [];
+            canvas.renderAll();
+
+            // Notice: Tool remains 'poly' for continuous L-shape outlining!
+        }
+
+        function cancelPolygon() {
+            if (activeLine) canvas.remove(activeLine);
+            if (firstPointCircle) canvas.remove(firstPointCircle);
+            tempLines.forEach(l => canvas.remove(l));
+            tempLines = [];
+            activeLine = null;
+            firstPointCircle = null;
+            polyPoints = [];
+            canvas.renderAll();
+        }
+
+        // Geometry Helpers for Polygon Area & Centroid
+        function getPolygonArea(points) {
+            let area = 0;
+            let j = points.length - 1;
+            for (let i = 0; i < points.length; i++) {
+                area += (points[j].x + points[i].x) * (points[j].y - points[i].y);
+                j = i;
+            }
+            return Math.abs(area / 2);
+        }
+
+        function getPolygonCentroid(points) {
+            let cx = 0, cy = 0, area = 0;
+            let j = points.length - 1;
+            for (let i = 0; i < points.length; i++) {
+                let p1 = points[i];
+                let p2 = points[j];
+                let f = (p1.x * p2.y - p2.x * p1.y);
+                cx += (p1.x + p2.x) * f;
+                cy += (p1.y + p2.y) * f;
+                area += f;
+                j = i;
+            }
+            area = area * 0.5;
+            if (Math.abs(area) < 0.0001) {
+                let minX = Math.min(...points.map(p => p.x));
+                let maxX = Math.max(...points.map(p => p.x));
+                let minY = Math.min(...points.map(p => p.y));
+                let maxY = Math.max(...points.map(p => p.y));
+                return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+            }
+            return { x: Math.abs(cx / (6 * area)), y: Math.abs(cy / (6 * area)) };
+        }
+
+        // --- Live Text & Calculation Updates during Move / Scale ---
 
         canvas.on('object:scaling', function(e) { updateLinkedText(e.target); });
         canvas.on('object:moving', function(e) { updateLinkedText(e.target); });
 
         function updateLinkedText(obj) {
             if (!obj || !obj.associatedText) return;
-            
-            const text = obj.associatedText;
-            
-            // Calculate final size after Fabric's scaling multipliers
-            const w = obj.width * obj.scaleX;
-            const h = obj.height * obj.scaleY;
-            const left = obj.left;
-            const top = obj.top;
 
-            if (obj.isArea) {
-                const sqft = (w / PIXELS_PER_FOOT) * (h / PIXELS_PER_FOOT);
-                text.set({ text: sqft.toFixed(1) + ' Sq Ft' });
-            } else if (obj.isCarpet) {
-                if (obj.carpetOrientation === 'horizontal') {
-                    const len = (w / PIXELS_PER_FOOT);
-                    text.set({ text: "12' x " + len.toFixed(1) + "'" });
-                } else {
-                    const len = (h / PIXELS_PER_FOOT);
-                    text.set({ text: "12' x " + len.toFixed(1) + "'" });
+            const text = obj.associatedText;
+
+            if (obj.isPolyArea) {
+                const currentSqFt = obj.baseSqFt * obj.scaleX * obj.scaleY;
+                text.set({ text: currentSqFt.toFixed(1) + ' Sq Ft' });
+                const center = obj.getCenterPoint();
+                text.set({ left: center.x, top: center.y });
+            } else {
+                const w = obj.width * obj.scaleX;
+                const h = obj.height * obj.scaleY;
+                const left = obj.left;
+                const top = obj.top;
+
+                if (obj.isArea) {
+                    const sqft = (w / PIXELS_PER_FOOT) * (h / PIXELS_PER_FOOT);
+                    text.set({ text: sqft.toFixed(1) + ' Sq Ft' });
+                } else if (obj.isCarpet) {
+                    if (obj.carpetOrientation === 'horizontal') {
+                        const len = (w / PIXELS_PER_FOOT);
+                        const sqft = 12 * len;
+                        text.set({ text: "12' x " + len.toFixed(1) + "'\n(" + sqft.toFixed(1) + " Sq Ft)" });
+                    } else {
+                        const len = (h / PIXELS_PER_FOOT);
+                        const sqft = 12 * len;
+                        text.set({ text: "12' x " + len.toFixed(1) + "'\n(" + sqft.toFixed(1) + " Sq Ft)" });
+                    }
                 }
+
+                text.set({
+                    left: left + (w / 2),
+                    top: top + (h / 2)
+                });
             }
 
-            // Keep text centered
-            text.set({
-                left: left + (w / 2),
-                top: top + (h / 2)
-            });
             text.setCoords();
         }
 
-        // --- Utility Functions ---
+        // --- Actions ---
 
         function clearAnnotations() {
-            if(confirm("Are you sure you want to clear all drawings?")) {
+            if (confirm("Are you sure you want to clear all drawings and measurements?")) {
+                cancelPolygon();
                 canvas.getObjects().forEach(function(obj) {
                     canvas.remove(obj);
                 });
-                document.getElementById('status-msg').innerText = 'All drawings cleared.';
+                updateStatus('All markups cleared.');
             }
         }
 
         function exportImage() {
             if (!canvas.backgroundImage) {
-                alert("Please upload a PDF first.");
+                alert("Please upload a PDF floorplan first.");
                 return;
             }
-            
-            // Reset zoom/pan if any existed to get a clean export
+
             const dataURL = canvas.toDataURL({ format: 'png', quality: 1.0 });
             const link = document.createElement('a');
             link.download = 'floorplan-markup.png';
@@ -614,7 +915,6 @@ html
             link.click();
             document.body.removeChild(link);
         }
-
     </script>
 </body>
 </html>
