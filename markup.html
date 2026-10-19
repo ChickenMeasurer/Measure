@@ -344,7 +344,7 @@
                 fabricCanvas.freeDrawingBrush.width = 3;
                 updateInstruction('Pen Mode: Draw freehand lines.');
             } else if (tool === 'select') {
-                updateInstruction('Select Mode: Move, adjust, or resize markups.');
+                updateInstruction('Select Mode: Move or resize markups. Use arrow keys to nudge (Shift = fast).');
             } else if (tool === 'sqft') {
                 updateInstruction('SqFt Box: Drag rectangular area (Blue Backslash Hatch).');
             } else if (tool === 'poly') {
@@ -388,6 +388,22 @@
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 if (fabricCanvas && fabricCanvas.getActiveObject() && fabricCanvas.getActiveObject().type === 'i-text' && fabricCanvas.getActiveObject().isEditing) return;
+
+                // Arrow key pixel-nudging logic
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    const activeObj = fabricCanvas.getActiveObject();
+                    if (activeObj) {
+                        e.preventDefault();
+                        const step = e.shiftKey ? 10 : 1;
+                        if (e.key === 'ArrowUp') activeObj.top -= step;
+                        if (e.key === 'ArrowDown') activeObj.top += step;
+                        if (e.key === 'ArrowLeft') activeObj.left -= step;
+                        if (e.key === 'ArrowRight') activeObj.left += step;
+                        activeObj.setCoords();
+                        fabricCanvas.renderAll();
+                        return;
+                    }
+                }
 
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
                     e.preventDefault(); undoLastAction();
@@ -577,14 +593,27 @@
             const text = group.item(1);
             if (!rect || !text) return;
 
-            const newWidth = rect.width * group.scaleX;
-            const newHeight = rect.height * group.scaleY;
+            const finalWidth = rect.width * group.scaleX;
+            const finalHeight = rect.height * group.scaleY;
 
-            rect.set({ width: newWidth, height: newHeight, scaleX: 1, scaleY: 1 });
-            group.set({ width: newWidth, height: newHeight, scaleX: 1, scaleY: 1 });
+            rect.set({
+                width: finalWidth,
+                height: finalHeight,
+                scaleX: 1,
+                scaleY: 1
+            });
 
-            text.set({ scaleX: 1, scaleY: 1, left: 0, top: 0 });
-            group.addWithUpdate();
+            text.set({
+                scaleX: 1,
+                scaleY: 1
+            });
+
+            group.set({
+                scaleX: 1,
+                scaleY: 1
+            });
+
+            group.setCoords();
             fabricCanvas.renderAll();
         }
 
@@ -673,11 +702,9 @@
 
             const { jsPDF } = window.jspdf;
 
-            // Save zoom state and reset to 1:1 for export
             const savedZoom = currentZoom;
             resetZoom();
 
-            // Export native canvas string directly from Fabric
             const imgData = fabricCanvas.toDataURL({
                 format: 'png',
                 multiplier: 1.0
@@ -694,7 +721,6 @@
             pdf.addImage(imgData, 'PNG', 0, 0, originalPageWidthPt, originalPageHeightPt);
             pdf.save('MarkedUp_FloorPlan_14Scale.pdf');
 
-            // Restore user zoom level
             currentZoom = savedZoom;
             applyZoom();
             updateInstruction('Exported true-scale PDF document.');
