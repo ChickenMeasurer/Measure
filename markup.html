@@ -1,4 +1,4 @@
-Thanks for testing this
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -202,17 +202,17 @@ Thanks for testing this
                 recordAction([e.path]);
             });
 
-            // Live updates during shape scaling
+            // Live recalculation during handle dragging
             fabricCanvas.on('object:scaling', function(e) {
                 if (e.target && e.target.type === 'group' && e.target.measurementType) {
                     updateGroupLabel(e.target);
                 }
             });
 
-            // Normalize group dimensions after scaling completes
+            // Final recalculation when handle dragging ends
             fabricCanvas.on('object:modified', function(e) {
                 if (e.target && e.target.type === 'group' && e.target.measurementType) {
-                    normalizeGroup(e.target);
+                    updateGroupLabel(e.target);
                 }
             });
 
@@ -430,7 +430,6 @@ Thanks for testing this
 
                 fabricCanvas.add(activeShape);
             } else if (currentTool === 'poly') {
-                // If clicking near starting point with 3+ vertices, complete polygon
                 if (polyPoints.length >= 3) {
                     const startPt = polyPoints[0];
                     const dist = Math.hypot(pointer.x - startPt.x, pointer.y - startPt.y);
@@ -465,7 +464,6 @@ Thanks for testing this
                     fabricCanvas.add(guideLine);
                 }
 
-                // Display "Finish L-Shape" button when at least 3 points exist
                 const finishBtn = document.getElementById('btn-finish-poly');
                 if (finishBtn) finishBtn.style.display = (polyPoints.length >= 3) ? 'flex' : 'none';
             }
@@ -561,7 +559,6 @@ Thanks for testing this
                 return;
             }
 
-            // Calculate area via Shoelace formula
             let areaPx = 0;
             let cx = 0, cy = 0;
 
@@ -625,98 +622,48 @@ Thanks for testing this
             if (fabricCanvas) fabricCanvas.renderAll();
         }
 
-        // --- Dynamic Label Recalculation & Counter-Scaling ---
+        // --- Exact Real-Time Scaling Recalculation ---
         function updateGroupLabel(group) {
             if (!group || !group.measurementType) return;
 
             const scaleX = group.scaleX || 1;
             const scaleY = group.scaleY || 1;
 
-            const effWidth = group.width * scaleX;
-            const effHeight = group.height * scaleY;
+            const rectOrShape = group.item(0);
+            const label = group.item(1);
 
-            const widthFt = (effWidth / PIXELS_PER_FOOT).toFixed(1);
-            const heightFt = (effHeight / PIXELS_PER_FOOT).toFixed(1);
+            if (!rectOrShape || !label) return;
 
             let labelText = '';
-            if (group.measurementType === 'sqft') {
+
+            if (group.measurementType === 'sqft' || group.measurementType === 'carpet') {
+                // Calculate exact scaled pixels of the shape inside the group
+                const effWidth = rectOrShape.width * (rectOrShape.scaleX || 1) * scaleX;
+                const effHeight = rectOrShape.height * (rectOrShape.scaleY || 1) * scaleY;
+
+                const widthFt = (effWidth / PIXELS_PER_FOOT).toFixed(1);
+                const heightFt = (effHeight / PIXELS_PER_FOOT).toFixed(1);
                 const sqft = ((effWidth * effHeight) / SQPX_PER_SQFT).toFixed(1);
-                labelText = `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`;
-            } else if (group.measurementType === 'carpet') {
-                const sqft = ((effWidth * effHeight) / SQPX_PER_SQFT).toFixed(1);
-                labelText = `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
+
+                if (group.measurementType === 'sqft') {
+                    labelText = `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`;
+                } else {
+                    labelText = `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
+                }
             } else if (group.measurementType === 'poly') {
                 const sqft = ((group.originalSqFt || 0) * scaleX * scaleY).toFixed(1);
                 labelText = `${sqft} Sq Ft`;
             }
 
-            const label = group.item(1);
-            if (label) {
-                label.set({
-                    text: labelText,
-                    scaleX: 1 / scaleX,
-                    scaleY: 1 / scaleY
-                });
-            }
-        }
+            // Update label text and counter-scale text box so it remains unwarped
+            label.set({
+                text: labelText,
+                scaleX: 1 / scaleX,
+                scaleY: 1 / scaleY
+            });
 
-        function normalizeGroup(group) {
-            if (!group || !group.measurementType) return;
-
-            const scaleX = group.scaleX || 1;
-            const scaleY = group.scaleY || 1;
-
-            if (scaleX === 1 && scaleY === 1) return;
-
-            const effWidth = group.width * scaleX;
-            const effHeight = group.height * scaleY;
-
-            const rectOrShape = group.item(0);
-            const label = group.item(1);
-
-            if (group.measurementType === 'sqft' || group.measurementType === 'carpet') {
-                if (rectOrShape) {
-                    rectOrShape.set({
-                        width: effWidth,
-                        height: effHeight,
-                        scaleX: 1,
-                        scaleY: 1,
-                        left: -effWidth / 2,
-                        top: -effHeight / 2
-                    });
-                }
-                if (label) {
-                    label.set({
-                        scaleX: 1,
-                        scaleY: 1,
-                        left: 0,
-                        top: 0
-                    });
-                }
-                group.set({
-                    width: effWidth,
-                    height: effHeight,
-                    scaleX: 1,
-                    scaleY: 1
-                });
-                group.addWithUpdate();
-            } else if (group.measurementType === 'poly') {
-                group.originalSqFt = (group.originalSqFt || 0) * scaleX * scaleY;
-                if (label) {
-                    label.set({
-                        scaleX: 1,
-                        scaleY: 1,
-                        left: 0,
-                        top: 0
-                    });
-                }
-                group.set({
-                    scaleX: 1,
-                    scaleY: 1
-                });
-                group.addWithUpdate();
-            }
-            fabricCanvas.renderAll();
+            group.dirty = true;
+            if (fabricCanvas) fabricCanvas.renderAll();
         }
 
         function recordAction(objects) {
@@ -765,11 +712,9 @@ Thanks for testing this
 
             const { jsPDF } = window.jspdf;
 
-            // Generate full resolution image of background + markups
             const dataUrl = fabricCanvas.toDataURL({ format: 'png', multiplier: 1.0 });
             const orientation = originalPageWidthPt > originalPageHeightPt ? 'landscape' : 'portrait';
 
-            // Create jsPDF document matched to native PDF point size (72 points = 1 inch)
             const pdf = new jsPDF({
                 orientation: orientation,
                 unit: 'pt',
