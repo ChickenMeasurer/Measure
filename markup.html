@@ -1,4 +1,4 @@
-html
+Thanks for testing this
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -202,6 +202,20 @@ html
                 recordAction([e.path]);
             });
 
+            // Live updates during shape scaling
+            fabricCanvas.on('object:scaling', function(e) {
+                if (e.target && e.target.type === 'group' && e.target.measurementType) {
+                    updateGroupLabel(e.target);
+                }
+            });
+
+            // Normalize group dimensions after scaling completes
+            fabricCanvas.on('object:modified', function(e) {
+                if (e.target && e.target.type === 'group' && e.target.measurementType) {
+                    normalizeGroup(e.target);
+                }
+            });
+
             // Recalculate mouse offsets when user scrolls viewport
             const viewport = document.getElementById('viewport');
             if (viewport) {
@@ -343,13 +357,14 @@ html
                 obj.selectable = isSelectable;
                 obj.evented = isSelectable;
             });
+            fabricCanvas.renderAll();
 
             if (tool === 'pen') {
                 fabricCanvas.freeDrawingBrush.color = '#dc2626';
                 fabricCanvas.freeDrawingBrush.width = 3;
                 updateInstruction('Pen Mode: Click & drag to write/sketch.');
             } else if (tool === 'select') {
-                updateInstruction('Select Mode: Move or resize markups.');
+                updateInstruction('Select Mode: Click and drag handles to move or resize markups.');
             } else if (tool === 'sqft') {
                 updateInstruction('SqFt Box: Click & drag rectangular room segments.');
             } else if (tool === 'poly') {
@@ -521,8 +536,9 @@ html
                 });
 
                 const group = new fabric.Group([activeShape, label], {
-                    selectable: false,
-                    evented: false
+                    selectable: (currentTool === 'select'),
+                    evented: (currentTool === 'select'),
+                    measurementType: currentTool
                 });
 
                 fabricCanvas.remove(activeShape);
@@ -530,7 +546,6 @@ html
                 recordAction([group]);
 
                 activeShape = null;
-                // Persistent drawing: Tool stays active!
             }
         }
 
@@ -558,7 +573,7 @@ html
                 cy += polyPoints[i].y;
             }
             areaPx = Math.abs(areaPx) / 2;
-            const sqft = (areaPx / SQPX_PER_SQFT).toFixed(1);
+            const sqftNum = parseFloat((areaPx / SQPX_PER_SQFT).toFixed(1));
 
             cx /= polyPoints.length;
             cy /= polyPoints.length;
@@ -570,7 +585,7 @@ html
                 objectCaching: false
             });
 
-            const label = new fabric.Text(`${sqft} Sq Ft`, {
+            const label = new fabric.Text(`${sqftNum} Sq Ft`, {
                 fontSize: 15,
                 fontWeight: 'bold',
                 fill: '#0f172a',
@@ -583,15 +598,15 @@ html
             });
 
             const group = new fabric.Group([polygon, label], {
-                selectable: false,
-                evented: false
+                selectable: (currentTool === 'select'),
+                evented: (currentTool === 'select'),
+                measurementType: 'poly',
+                originalSqFt: sqftNum
             });
 
             resetPolyDrawing();
             fabricCanvas.add(group);
             recordAction([group]);
-
-            // Persistent drawing: Poly tool remains selected!
         }
 
         function resetPolyDrawing() {
@@ -608,6 +623,100 @@ html
             if (finishBtn) finishBtn.style.display = 'none';
 
             if (fabricCanvas) fabricCanvas.renderAll();
+        }
+
+        // --- Dynamic Label Recalculation & Counter-Scaling ---
+        function updateGroupLabel(group) {
+            if (!group || !group.measurementType) return;
+
+            const scaleX = group.scaleX || 1;
+            const scaleY = group.scaleY || 1;
+
+            const effWidth = group.width * scaleX;
+            const effHeight = group.height * scaleY;
+
+            const widthFt = (effWidth / PIXELS_PER_FOOT).toFixed(1);
+            const heightFt = (effHeight / PIXELS_PER_FOOT).toFixed(1);
+
+            let labelText = '';
+            if (group.measurementType === 'sqft') {
+                const sqft = ((effWidth * effHeight) / SQPX_PER_SQFT).toFixed(1);
+                labelText = `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`;
+            } else if (group.measurementType === 'carpet') {
+                const sqft = ((effWidth * effHeight) / SQPX_PER_SQFT).toFixed(1);
+                labelText = `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
+            } else if (group.measurementType === 'poly') {
+                const sqft = ((group.originalSqFt || 0) * scaleX * scaleY).toFixed(1);
+                labelText = `${sqft} Sq Ft`;
+            }
+
+            const label = group.item(1);
+            if (label) {
+                label.set({
+                    text: labelText,
+                    scaleX: 1 / scaleX,
+                    scaleY: 1 / scaleY
+                });
+            }
+        }
+
+        function normalizeGroup(group) {
+            if (!group || !group.measurementType) return;
+
+            const scaleX = group.scaleX || 1;
+            const scaleY = group.scaleY || 1;
+
+            if (scaleX === 1 && scaleY === 1) return;
+
+            const effWidth = group.width * scaleX;
+            const effHeight = group.height * scaleY;
+
+            const rectOrShape = group.item(0);
+            const label = group.item(1);
+
+            if (group.measurementType === 'sqft' || group.measurementType === 'carpet') {
+                if (rectOrShape) {
+                    rectOrShape.set({
+                        width: effWidth,
+                        height: effHeight,
+                        scaleX: 1,
+                        scaleY: 1,
+                        left: -effWidth / 2,
+                        top: -effHeight / 2
+                    });
+                }
+                if (label) {
+                    label.set({
+                        scaleX: 1,
+                        scaleY: 1,
+                        left: 0,
+                        top: 0
+                    });
+                }
+                group.set({
+                    width: effWidth,
+                    height: effHeight,
+                    scaleX: 1,
+                    scaleY: 1
+                });
+                group.addWithUpdate();
+            } else if (group.measurementType === 'poly') {
+                group.originalSqFt = (group.originalSqFt || 0) * scaleX * scaleY;
+                if (label) {
+                    label.set({
+                        scaleX: 1,
+                        scaleY: 1,
+                        left: 0,
+                        top: 0
+                    });
+                }
+                group.set({
+                    scaleX: 1,
+                    scaleY: 1
+                });
+                group.addWithUpdate();
+            }
+            fabricCanvas.renderAll();
         }
 
         function recordAction(objects) {
