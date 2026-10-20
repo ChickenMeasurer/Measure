@@ -54,8 +54,20 @@
         .zoom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 
         /* Canvas Viewport */
-        .viewport { flex: 1; background-color: #334155; display: flex; align-items: center; justify-content: center; overflow: auto; position: relative; padding: 20px; }
-        .canvas-container-wrapper { position: relative; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); background-color: white; }
+        .viewport { 
+            flex: 1; 
+            background-color: #334155; 
+            overflow: auto; 
+            position: relative; 
+            padding: 40px; 
+            display: flex; 
+        }
+        .canvas-container-wrapper { 
+            position: relative; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); 
+            background-color: white; 
+            margin: auto; /* Centered when small; scrollable when zoomed */
+        }
         #fabric-canvas { position: absolute; top: 0; left: 0; }
         #file-input { display: none; }
     </style>
@@ -106,7 +118,7 @@
                         <span class="kbd-badge">A</span>
                     </button>
                     <button class="btn" id="tool-carpet" onclick="setTool('carpet')">
-                        <span>✂️ 12' Carpet Cut (Forward Hatch)</span>
+                        <span>✂️ Carpet Cut (Forward Hatch)</span>
                         <span class="kbd-badge">C</span>
                     </button>
                     <button class="btn" id="tool-carpet-lock" onclick="toggleCarpetLock()">
@@ -350,7 +362,7 @@
             } else if (tool === 'poly') {
                 updateInstruction('Custom L-Shape: Click corners sequentially. Press Enter to finish.');
             } else if (tool === 'carpet') {
-                updateInstruction(`12' Carpet Cut: Drag cut area (Amber Forward Hatch, 12' ${carpetLockMode}).`);
+                updateInstruction(`Carpet Cut: Drag cut area (Amber Forward Hatch, 12' ${carpetLockMode}).`);
             } else if (tool === 'text') {
                 updateInstruction('Text Tool: Click canvas to insert text notes.');
             }
@@ -360,7 +372,7 @@
             carpetLockMode = (carpetLockMode === 'width') ? 'height' : 'width';
             document.getElementById('carpet-lock-label').innerText = `🔒 Lock: 12' ${carpetLockMode.charAt(0).toUpperCase() + carpetLockMode.slice(1)}`;
             if (currentTool === 'carpet') {
-                updateInstruction(`12' Carpet Cut: Drag cut area (Amber Forward Hatch, 12' ${carpetLockMode}).`);
+                updateInstruction(`Carpet Cut: Drag cut area (Amber Forward Hatch, 12' ${carpetLockMode}).`);
             }
         }
 
@@ -533,7 +545,7 @@
 
                 const labelText = (currentTool === 'sqft') 
                     ? `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`
-                    : `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
+                    : `Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
 
                 const label = new fabric.Text(labelText, {
                     fontSize: 13,
@@ -577,7 +589,7 @@
 
             const isSqFt = (group.toolType === 'sqft');
             text.set({
-                text: isSqFt ? `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')` : `12' Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`,
+                text: isSqFt ? `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')` : `Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`,
                 scaleX: 1 / group.scaleX,
                 scaleY: 1 / group.scaleY
             });
