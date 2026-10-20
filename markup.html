@@ -48,6 +48,8 @@
         /* Form Controls & Selects */
         .form-select { width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.84rem; color: #334155; background-color: #f8fafc; cursor: pointer; }
         .form-select:focus { outline: none; border-color: #2563eb; background-color: #ffffff; }
+        .form-input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.84rem; color: #334155; background-color: #f8fafc; }
+        .form-input:focus { outline: none; border-color: #2563eb; background-color: #ffffff; }
 
         /* Opacity Controls */
         .slider-container { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
@@ -145,7 +147,20 @@
                         <option value="9x60">9" x 60" (Wide Plank LVP)</option>
                         <option value="5x36">5" x 36" (Hardwood Plank)</option>
                         <option value="3x24">3" x 24" (Narrow Plank)</option>
+                        <option value="custom">Custom Plank Size...</option>
                     </select>
+
+                    <div id="custom-plank-inputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <div>
+                            <label style="font-size: 0.7rem; font-weight: 600; color: #64748b;">Width (in):</label>
+                            <input type="number" id="custom-plank-w" class="form-input" value="8" min="1" max="48" step="0.5" onchange="updatePlankSettings()">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; font-weight: 600; color: #64748b;">Length (in):</label>
+                            <input type="number" id="custom-plank-l" class="form-input" value="48" min="1" max="120" step="1" onchange="updatePlankSettings()">
+                        </div>
+                    </div>
+
                     <button class="btn" id="btn-plank-dir" onclick="togglePlankDirection()">
                         <span id="plank-dir-label">↔️ Run: Horizontal</span>
                         <span class="kbd-badge">R</span>
@@ -154,7 +169,7 @@
             </div>
 
             <div>
-                <div class="section-title">Fill Line Opacity</div>
+                <div class="section-title">Fill & Pattern Opacity</div>
                 <div class="slider-container">
                     <div class="slider-label">
                         <span>Transparency:</span>
@@ -210,7 +225,7 @@
         let currentZoom = 1.0;
 
         // Plank Settings
-        let plankPreset = 'none'; // 'none', '7x48', '9x60', '5x36', '3x24'
+        let plankPreset = 'none'; // 'none', '7x48', '9x60', '5x36', '3x24', 'custom'
         let plankDirection = 'horizontal'; // 'horizontal' or 'vertical'
 
         let originalPageWidthPt = 612;
@@ -259,17 +274,23 @@
         }
 
         function getPlankDimensions() {
+            if (plankPreset === 'none') return null;
             if (plankPreset === '7x48') return { w: 7, l: 48 };
             if (plankPreset === '9x60') return { w: 9, l: 60 };
             if (plankPreset === '5x36') return { w: 5, l: 36 };
             if (plankPreset === '3x24') return { w: 3, l: 24 };
+            if (plankPreset === 'custom') {
+                const w = parseFloat(document.getElementById('custom-plank-w').value) || 8;
+                const l = parseFloat(document.getElementById('custom-plank-l').value) || 48;
+                return { w: Math.max(0.5, w), l: Math.max(1, l) };
+            }
             return null;
         }
 
         function createPlankPattern(widthInches, lengthInches, direction, opacity) {
             const actualScale = SCALE_FACTOR * 1.5; // 27 px/ft
-            const wPx = Math.max((widthInches / 12) * actualScale, 4);
-            const lPx = Math.max((lengthInches / 12) * actualScale, 10);
+            const wPx = Math.max((widthInches / 12) * actualScale, 3);
+            const lPx = Math.max((lengthInches / 12) * actualScale, 8);
 
             const numRows = 6;
             const patternCanvas = document.createElement('canvas');
@@ -277,7 +298,7 @@
 
             pctx.strokeStyle = '#2563eb';
             pctx.globalAlpha = opacity;
-            pctx.lineWidth = 1.2;
+            pctx.lineWidth = 1.3;
 
             if (direction === 'horizontal') {
                 patternCanvas.width = lPx;
@@ -364,6 +385,12 @@
 
         function updatePlankSettings() {
             plankPreset = document.getElementById('plank-preset').value;
+            const customDiv = document.getElementById('custom-plank-inputs');
+            if (plankPreset === 'custom') {
+                customDiv.style.display = 'grid';
+            } else {
+                customDiv.style.display = 'none';
+            }
             updateHatchOpacity(document.getElementById('opacity-slider').value);
         }
 
