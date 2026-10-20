@@ -141,7 +141,7 @@
             <div>
                 <div class="section-title">Plank Goods Options</div>
                 <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <select class="form-select" id="plank-preset" onchange="updatePlankSettings()">
+                    <select class="form-select" id="plank-preset" onchange="onUIInputChange()">
                         <option value="none">None / Standard Hatch</option>
                         <option value="7x48">7" x 48" (Standard LVP/Laminate)</option>
                         <option value="9x60">9" x 60" (Wide Plank LVP)</option>
@@ -153,11 +153,11 @@
                     <div id="custom-plank-inputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 6px;">
                         <div>
                             <label style="font-size: 0.7rem; font-weight: 600; color: #64748b;">Width (in):</label>
-                            <input type="number" id="custom-plank-w" class="form-input" value="8" min="1" max="48" step="0.5" onchange="updatePlankSettings()">
+                            <input type="number" id="custom-plank-w" class="form-input" value="8" min="1" max="48" step="0.5" onchange="onUIInputChange()">
                         </div>
                         <div>
                             <label style="font-size: 0.7rem; font-weight: 600; color: #64748b;">Length (in):</label>
-                            <input type="number" id="custom-plank-l" class="form-input" value="48" min="1" max="120" step="1" onchange="updatePlankSettings()">
+                            <input type="number" id="custom-plank-l" class="form-input" value="48" min="1" max="120" step="1" onchange="onUIInputChange()">
                         </div>
                     </div>
 
@@ -175,7 +175,7 @@
                         <span>Transparency:</span>
                         <span id="opacity-val">35%</span>
                     </div>
-                    <input type="range" id="opacity-slider" min="10" max="100" value="35" oninput="updateHatchOpacity(this.value)">
+                    <input type="range" id="opacity-slider" min="10" max="100" value="35" oninput="onUIInputChange()">
                 </div>
             </div>
 
@@ -224,9 +224,10 @@
         let hatchOpacity = 0.35;
         let currentZoom = 1.0;
 
-        // Plank Settings
-        let plankPreset = 'none'; // 'none', '7x48', '9x60', '5x36', '3x24', 'custom'
-        let plankDirection = 'horizontal'; // 'horizontal' or 'vertical'
+        // Default Plank Settings for NEW shapes
+        let plankPreset = 'none';
+        let plankDirection = 'horizontal';
+        let isSyncingUI = false;
 
         let originalPageWidthPt = 612;
         let originalPageHeightPt = 792;
@@ -269,17 +270,25 @@
             fabricCanvas.on('mouse:up', onMouseUp);
             fabricCanvas.on('object:scaling', onObjectScaling);
             fabricCanvas.on('object:modified', onObjectModified);
+            fabricCanvas.on('selection:created', onSelectionChange);
+            fabricCanvas.on('selection:updated', onSelectionChange);
 
             document.getElementById('file-input').addEventListener('change', handleFileUpload);
         }
 
-        function getPlankDimensions() {
-            if (plankPreset === 'none') return null;
-            if (plankPreset === '7x48') return { w: 7, l: 48 };
-            if (plankPreset === '9x60') return { w: 9, l: 60 };
-            if (plankPreset === '5x36') return { w: 5, l: 36 };
-            if (plankPreset === '3x24') return { w: 3, l: 24 };
-            if (plankPreset === 'custom') {
+        function hexToRgba(hex, alpha) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(x => x + x).join('');
+            const num = parseInt(c, 16);
+            return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+        }
+
+        function getPresetDimensions(preset) {
+            if (preset === '7x48') return { w: 7, l: 48 };
+            if (preset === '9x60') return { w: 9, l: 60 };
+            if (preset === '5x36') return { w: 5, l: 36 };
+            if (preset === '3x24') return { w: 3, l: 24 };
+            if (preset === 'custom') {
                 const w = parseFloat(document.getElementById('custom-plank-w').value) || 8;
                 const l = parseFloat(document.getElementById('custom-plank-l').value) || 48;
                 return { w: Math.max(0.5, w), l: Math.max(1, l) };
@@ -296,14 +305,19 @@
             const patternCanvas = document.createElement('canvas');
             const pctx = patternCanvas.getContext('2d');
 
-            pctx.strokeStyle = '#2563eb';
-            pctx.globalAlpha = opacity;
-            pctx.lineWidth = 1.3;
-
             if (direction === 'horizontal') {
                 patternCanvas.width = lPx;
                 patternCanvas.height = wPx * numRows;
+            } else {
+                patternCanvas.width = wPx * numRows;
+                patternCanvas.height = lPx;
+            }
 
+            pctx.clearRect(0, 0, patternCanvas.width, patternCanvas.height);
+            pctx.strokeStyle = hexToRgba('#2563eb', opacity);
+            pctx.lineWidth = 1.5;
+
+            if (direction === 'horizontal') {
                 for (let i = 0; i < numRows; i++) {
                     let y = i * wPx;
                     pctx.beginPath();
@@ -318,9 +332,6 @@
                     pctx.stroke();
                 }
             } else {
-                patternCanvas.width = wPx * numRows;
-                patternCanvas.height = lPx;
-
                 for (let i = 0; i < numRows; i++) {
                     let x = i * wPx;
                     pctx.beginPath();
@@ -342,15 +353,15 @@
             });
         }
 
-        function createHatchPattern(baseColor, angle, opacity) {
+        function createHatchPattern(baseHex, angle, opacity) {
             const patternCanvas = document.createElement('canvas');
             patternCanvas.width = 16;
             patternCanvas.height = 16;
             const pctx = patternCanvas.getContext('2d');
 
-            pctx.strokeStyle = baseColor;
-            pctx.globalAlpha = opacity;
-            pctx.lineWidth = 1.8;
+            pctx.clearRect(0, 0, 16, 16);
+            pctx.strokeStyle = hexToRgba(baseHex, opacity);
+            pctx.lineWidth = 2.0;
             pctx.beginPath();
 
             if (angle === 45) {
@@ -370,54 +381,100 @@
             });
         }
 
-        function getActiveFillPattern(toolType) {
+        function getPatternForSettings(toolType, preset, w, l, dir, opacity) {
             if (toolType === 'carpet') {
-                return createHatchPattern('#d97706', 45, hatchOpacity);
+                return createHatchPattern('#d97706', 45, opacity);
             }
 
-            const dims = getPlankDimensions();
-            if (dims) {
-                return createPlankPattern(dims.w, dims.l, plankDirection, hatchOpacity);
+            if (preset && preset !== 'none') {
+                return createPlankPattern(w, l, dir, opacity);
             }
 
-            return createHatchPattern('#2563eb', 135, hatchOpacity);
+            return createHatchPattern('#2563eb', 135, opacity);
         }
 
-        function updatePlankSettings() {
-            plankPreset = document.getElementById('plank-preset').value;
-            const customDiv = document.getElementById('custom-plank-inputs');
-            if (plankPreset === 'custom') {
-                customDiv.style.display = 'grid';
-            } else {
-                customDiv.style.display = 'none';
+        function onSelectionChange() {
+            if (!fabricCanvas) return;
+            const activeObj = fabricCanvas.getActiveObject();
+            if (!activeObj) return;
+
+            if (activeObj.plankPreset !== undefined) {
+                isSyncingUI = true;
+
+                document.getElementById('plank-preset').value = activeObj.plankPreset;
+                document.getElementById('custom-plank-inputs').style.display = (activeObj.plankPreset === 'custom') ? 'grid' : 'none';
+                if (activeObj.plankW) document.getElementById('custom-plank-w').value = activeObj.plankW;
+                if (activeObj.plankL) document.getElementById('custom-plank-l').value = activeObj.plankL;
+
+                plankDirection = activeObj.plankDirection || 'horizontal';
+                document.getElementById('plank-dir-label').innerText = `↔️ Run: ${plankDirection.charAt(0).toUpperCase() + plankDirection.slice(1)}`;
+
+                const opacityPct = Math.round((activeObj.patternOpacity || 0.35) * 100);
+                document.getElementById('opacity-slider').value = opacityPct;
+                document.getElementById('opacity-val').innerText = `${opacityPct}%`;
+
+                isSyncingUI = false;
             }
-            updateHatchOpacity(document.getElementById('opacity-slider').value);
+        }
+
+        function onUIInputChange() {
+            if (isSyncingUI) return;
+
+            const preset = document.getElementById('plank-preset').value;
+            const customW = parseFloat(document.getElementById('custom-plank-w').value) || 8;
+            const customL = parseFloat(document.getElementById('custom-plank-l').value) || 48;
+            const opacityVal = parseFloat(document.getElementById('opacity-slider').value) / 100;
+
+            document.getElementById('custom-plank-inputs').style.display = (preset === 'custom') ? 'grid' : 'none';
+            document.getElementById('opacity-val').innerText = `${Math.round(opacityVal * 100)}%`;
+
+            // Update defaults for new shapes
+            plankPreset = preset;
+            hatchOpacity = opacityVal;
+
+            // Apply to active selected shape if present
+            const activeObj = fabricCanvas ? fabricCanvas.getActiveObject() : null;
+            if (activeObj && (activeObj.isType('group') || activeObj.isType('polygon'))) {
+                const dims = getPresetDimensions(preset);
+                activeObj.plankPreset = preset;
+                activeObj.plankW = dims ? dims.w : customW;
+                activeObj.plankL = dims ? dims.l : customL;
+                activeObj.plankDirection = plankDirection;
+                activeObj.patternOpacity = opacityVal;
+
+                const newPattern = getPatternForSettings(
+                    activeObj.toolType,
+                    activeObj.plankPreset,
+                    activeObj.plankW,
+                    activeObj.plankL,
+                    activeObj.plankDirection,
+                    activeObj.patternOpacity
+                );
+
+                const targetShape = activeObj.isType('group') ? activeObj.item(0) : activeObj;
+                targetShape.set('fill', newPattern);
+
+                if (activeObj.isType('group') && activeObj.item(1)) {
+                    const rect = activeObj.item(0);
+                    const text = activeObj.item(1);
+                    const actualScale = SCALE_FACTOR * 1.5;
+                    const currentWidthPx = rect.width * activeObj.scaleX;
+                    const currentHeightPx = rect.height * activeObj.scaleY;
+                    const widthFt = (currentWidthPx / actualScale).toFixed(1);
+                    const heightFt = (currentHeightPx / actualScale).toFixed(1);
+                    const sqft = (widthFt * heightFt).toFixed(1);
+
+                    text.set('text', formatLabelText(activeObj.toolType, sqft, widthFt, heightFt, activeObj));
+                }
+
+                fabricCanvas.renderAll();
+            }
         }
 
         function togglePlankDirection() {
             plankDirection = (plankDirection === 'horizontal') ? 'vertical' : 'horizontal';
             document.getElementById('plank-dir-label').innerText = `↔️ Run: ${plankDirection.charAt(0).toUpperCase() + plankDirection.slice(1)}`;
-            updateHatchOpacity(document.getElementById('opacity-slider').value);
-        }
-
-        function updateHatchOpacity(val) {
-            hatchOpacity = val / 100;
-            document.getElementById('opacity-val').innerText = `${val}%`;
-
-            if (!fabricCanvas) return;
-
-            fabricCanvas.getObjects().forEach(obj => {
-                if (obj.isType('group')) {
-                    const shape = obj.item(0);
-                    if (shape) {
-                        shape.set('fill', getActiveFillPattern(obj.toolType));
-                    }
-                } else if (obj.isType('polygon')) {
-                    obj.set('fill', getActiveFillPattern('poly'));
-                }
-            });
-
-            fabricCanvas.renderAll();
+            onUIInputChange();
         }
 
         function handleFileUpload(e) {
@@ -492,7 +549,7 @@
                 fabricCanvas.freeDrawingBrush.width = 3;
                 updateInstruction('Pen Mode: Draw freehand lines.');
             } else if (tool === 'select') {
-                updateInstruction('Select Mode: Move or resize markups. Use arrow keys to nudge (Shift = fast).');
+                updateInstruction('Select Mode: Move/resize markups. Select a shape to adjust its plank settings.');
             } else if (tool === 'sqft') {
                 updateInstruction('SqFt Box: Drag rectangular area.');
             } else if (tool === 'poly') {
@@ -602,7 +659,10 @@
                 origY = pointer.y;
 
                 const strokeColor = (currentTool === 'sqft') ? '#2563eb' : '#d97706';
-                const pattern = getActiveFillPattern(currentTool);
+                const dims = getPresetDimensions(plankPreset);
+                const pW = dims ? dims.w : 8;
+                const pL = dims ? dims.l : 48;
+                const pattern = getPatternForSettings(currentTool, plankPreset, pW, pL, plankDirection, hatchOpacity);
 
                 activeShape = new fabric.Rect({
                     left: origX,
@@ -671,19 +731,27 @@
             }
         }
 
-        function formatLabelText(toolType, sqft, widthFt, heightFt) {
+        function formatLabelText(toolType, sqft, widthFt, heightFt, settings) {
             if (toolType === 'carpet') {
                 return `Carpet Cut\n${sqft} Sq Ft (${widthFt}' x ${heightFt}')`;
             }
 
-            const dims = getPlankDimensions();
-            if (dims) {
-                const plankSqFt = (dims.w * dims.l) / 144;
+            if (settings && settings.plankPreset && settings.plankPreset !== 'none') {
+                const w = settings.plankW;
+                const l = settings.plankL;
+                const plankSqFt = (w * l) / 144;
                 const planksCount = Math.ceil(sqft / plankSqFt);
-                return `${sqft} Sq Ft (~${planksCount} Planks)\n(${dims.w}"x${dims.l}" @ ${widthFt}' x ${heightFt}')`;
+                if (widthFt && heightFt) {
+                    return `${sqft} Sq Ft (~${planksCount} Planks)\n(${w}"x${l}" @ ${widthFt}' x ${heightFt}')`;
+                } else {
+                    return `${sqft} Sq Ft (~${planksCount} Planks)\n(${w}"x${l}" Run)`;
+                }
             }
 
-            return `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`;
+            if (widthFt && heightFt) {
+                return `${sqft} Sq Ft\n(${widthFt}' x ${heightFt}')`;
+            }
+            return `${sqft} Sq Ft`;
         }
 
         function onMouseUp() {
@@ -695,7 +763,19 @@
                 const heightFt = (activeShape.height / actualScale).toFixed(1);
                 const sqft = (widthFt * heightFt).toFixed(1);
 
-                const labelText = formatLabelText(currentTool, sqft, widthFt, heightFt);
+                const dims = getPresetDimensions(plankPreset);
+                const pW = dims ? dims.w : 8;
+                const pL = dims ? dims.l : 48;
+
+                const shapeSettings = {
+                    plankPreset: plankPreset,
+                    plankW: pW,
+                    plankL: pL,
+                    plankDirection: plankDirection,
+                    patternOpacity: hatchOpacity
+                };
+
+                const labelText = formatLabelText(currentTool, sqft, widthFt, heightFt, shapeSettings);
 
                 const label = new fabric.Text(labelText, {
                     fontSize: 13,
@@ -711,7 +791,12 @@
 
                 const group = new fabric.Group([activeShape, label], {
                     selectable: true,
-                    toolType: currentTool
+                    toolType: currentTool,
+                    plankPreset: plankPreset,
+                    plankW: pW,
+                    plankL: pL,
+                    plankDirection: plankDirection,
+                    patternOpacity: hatchOpacity
                 });
 
                 fabricCanvas.remove(activeShape);
@@ -738,7 +823,7 @@
             const sqft = (widthFt * heightFt).toFixed(1);
 
             text.set({
-                text: formatLabelText(group.toolType, sqft, widthFt, heightFt),
+                text: formatLabelText(group.toolType, sqft, widthFt, heightFt, group),
                 scaleX: 1 / group.scaleX,
                 scaleY: 1 / group.scaleY
             });
@@ -794,18 +879,24 @@
 
             cx /= polyPoints.length; cy /= polyPoints.length;
 
-            const pattern = getActiveFillPattern('poly');
+            const dims = getPresetDimensions(plankPreset);
+            const pW = dims ? dims.w : 8;
+            const pL = dims ? dims.l : 48;
+
+            const pattern = getPatternForSettings('poly', plankPreset, pW, pL, plankDirection, hatchOpacity);
             const polygon = new fabric.Polygon(polyPoints, {
                 fill: pattern, stroke: '#2563eb', strokeWidth: 2, objectCaching: false
             });
 
-            let labelText = `${sqft} Sq Ft`;
-            const dims = getPlankDimensions();
-            if (dims) {
-                const plankSqFt = (dims.w * dims.l) / 144;
-                const planksCount = Math.ceil(sqft / plankSqFt);
-                labelText = `${sqft} Sq Ft (~${planksCount} Planks)\n(${dims.w}"x${dims.l}" Run)`;
-            }
+            const shapeSettings = {
+                plankPreset: plankPreset,
+                plankW: pW,
+                plankL: pL,
+                plankDirection: plankDirection,
+                patternOpacity: hatchOpacity
+            };
+
+            const labelText = formatLabelText('poly', sqft, null, null, shapeSettings);
 
             const label = new fabric.Text(labelText, {
                 fontSize: 14, fontWeight: 'bold', fill: '#1e3a8a',
@@ -813,7 +904,16 @@
                 originX: 'center', originY: 'center', left: cx, top: cy
             });
 
-            const group = new fabric.Group([polygon, label], { selectable: true, toolType: 'poly' });
+            const group = new fabric.Group([polygon, label], {
+                selectable: true,
+                toolType: 'poly',
+                plankPreset: plankPreset,
+                plankW: pW,
+                plankL: pL,
+                plankDirection: plankDirection,
+                patternOpacity: hatchOpacity
+            });
+
             resetPolyDrawing();
             fabricCanvas.add(group);
             recordAction([group]);
