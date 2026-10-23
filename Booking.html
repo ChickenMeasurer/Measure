@@ -522,7 +522,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
+    // Updated to the new Gen 2 Function URL
+    const CALENDAR_ENDPOINT = "https://getbusyslots-jqc5xvwbaq-uc.a.run.app";
 
     const TIME_SLOTS = [
         "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
@@ -735,7 +736,7 @@
                 
                 if (selectedTime === timeStr) {
                     btn.classList.add('selected');
-                    selectedTimeStillValid = true; // Confirms the slot is still fully available
+                    selectedTimeStillValid = true; 
                 }
 
                 btn.addEventListener('click', () => {
@@ -752,7 +753,6 @@
 
         if (slotStatus) slotStatus.innerText = `(${availableCount} available)`;
 
-        // Slot Steal Protection: If a background sync blocks the user's actively selected time, clear it
         if (selectedTime && !selectedTimeStillValid) {
             selectedTime = null;
             document.getElementById('selectedTimeInput').value = '';
@@ -927,13 +927,11 @@
                 const data = await res.json();
                 const newBusySlots = data.busySlots || [];
                 
-                // Compare to prevent flickering the UI on every tick
                 if (JSON.stringify(newBusySlots) !== JSON.stringify(busySlots) || !isCalendarLoaded) {
                     busySlots = newBusySlots;
                     isCalendarLoaded = true; 
                     renderTimeSlots(); 
                     
-                    // Re-evaluate travel warning if a selection exists in case it was bumped
                     if (selectedTime) triggerDriveCheck();
                 }
             } else if (retryCount < 2) {
@@ -953,7 +951,6 @@
     }
     initCalendarSync();
 
-    // Auto-refresh the calendar silently every 10 seconds
     setInterval(() => initCalendarSync(), 10000);
 
     const form = document.getElementById('measureForm');
@@ -1008,13 +1005,13 @@
                 timestamp: serverTimestamp()
             });
 
-// 1. Calculate actual Date objects for the calendar invite
+            // Calculate exact Date objects for the calendar invite
             const [year, month, day] = submissionData.available_days.split('-').map(Number);
             const minutes = timeStrToMinutes(submissionData.preferred_times[0]);
             const startDate = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
             const endDate = new Date(startDate.getTime() + submissionData.duration_minutes * 60000);
 
-            // 2. Format the payload exactly how your new Firebase function expects it
+            // Format the payload exactly how the new Firebase function expects it
             const emailPayload = {
                 startTime: startDate.toISOString(),
                 endTime: endDate.toISOString(),
@@ -1024,8 +1021,8 @@
                 customerName: submissionData.name
             };
 
-            // 3. Call the new Outlook Firebase function instead of the old Gmail Apps Script
-            await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/scheduleMeasure", {
+            // Call the new Outlook Firebase function instead of the old Gmail Apps Script
+            await fetch("https://schedulemeasure-jqc5xvwbaq-uc.a.run.app", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(emailPayload)
@@ -1036,7 +1033,7 @@
                     <h2 style="border:none;">Measure Scheduled!</h2>
                     <p style="font-size: 1.15em; color: #4e342e; line-height: 1.6;">
                         Booked for <b>${submissionData.available_days}</b> at <b>${submissionData.preferred_times[0]}</b> (${submissionData.duration}).<br>
-                        Details saved & calendar invitation sent to Outlook.
+                        Details saved & calendar invitation sent via Outlook.
                     </p>
                     <div style="font-size: 55px; margin: 20px 0;">📐📅✅</div>
                     <button onclick="location.reload()" style="background:none; color:#3e2723; text-decoration:underline; font-size: 0.9em; border:none; cursor:pointer;">Book another measure</button>
