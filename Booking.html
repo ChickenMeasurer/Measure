@@ -1008,11 +1008,27 @@
                 timestamp: serverTimestamp()
             });
 
-            await fetch("https://script.google.com/macros/s/AKfycbzaujNyeTmsyzjtaLIizlA4gAaDZrKC4_C73Y5fjtwo4rxAZ4XyFWisE1dyF-sMflM/exec", {
+// 1. Calculate actual Date objects for the calendar invite
+            const [year, month, day] = submissionData.available_days.split('-').map(Number);
+            const minutes = timeStrToMinutes(submissionData.preferred_times[0]);
+            const startDate = new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60, 0);
+            const endDate = new Date(startDate.getTime() + submissionData.duration_minutes * 60000);
+
+            // 2. Format the payload exactly how your new Firebase function expects it
+            const emailPayload = {
+                startTime: startDate.toISOString(),
+                endTime: endDate.toISOString(),
+                summary: `Measure: ${submissionData.name} (${submissionData.salesperson})`,
+                description: `Customer: ${submissionData.name}\nPhone: ${submissionData.phone}\nEstimate: ${submissionData.estimate_number}\nNotes: ${submissionData.details}\nConfirmation Preference: ${submissionData.confirmation}`,
+                address: submissionData.address,
+                customerName: submissionData.name
+            };
+
+            // 3. Call the new Outlook Firebase function instead of the old Gmail Apps Script
+            await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/scheduleMeasure", {
                 method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(submissionData),
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(emailPayload)
             });
 
             container.innerHTML = `
