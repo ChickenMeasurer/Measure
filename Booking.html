@@ -522,8 +522,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Updated to the new Gen 2 Function URL
-    const CALENDAR_ENDPOINT = "https://getbusyslots-jqc5xvwbaq-uc.a.run.app";
+    // Reverted to the trusted cloudfunctions.net endpoint
+    const CALENDAR_ENDPOINT = "https://us-central1-chickenmeasurer-37304.cloudfunctions.net/getBusySlots";
 
     const TIME_SLOTS = [
         "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", 
@@ -1021,8 +1021,8 @@
                 customerName: submissionData.name
             };
 
-            // Call the new Outlook Firebase function instead of the old Gmail Apps Script
-            await fetch("https://schedulemeasure-jqc5xvwbaq-uc.a.run.app", {
+            // Reverted to the trusted cloudfunctions.net endpoint
+            await fetch("https://us-central1-chickenmeasurer-37304.cloudfunctions.net/scheduleMeasure", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(emailPayload)
